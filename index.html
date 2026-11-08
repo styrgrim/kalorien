@@ -125,6 +125,7 @@ h2{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01
 .mday .pdot{position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;box-shadow:0 0 0 1.5px var(--surface)}
 .pill.r-better,.pill.r-ok,.pill.r-worse,.pill.r-bad,.pill.r-surplus{font-weight:700}
 .mleg i.dt{border-radius:50%;width:9px;height:9px;vertical-align:0}
+.mday.pre{opacity:.55}
 .mday.plan small{color:var(--muted);font-weight:500}
 .dot-leg{background:var(--accent);border-radius:50%!important;width:8px!important;height:8px!important;vertical-align:0!important}
 .dhead{text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}
@@ -780,10 +781,11 @@ function renderMonth(){
   let sumD=0,nD=0,miss=0;
   for(let d=1;d<=days;d++){
     const dt=new Date(y,m,d),iso=isoOf(dt),e=byDate[iso],pr=pend[iso],view=pr?{...(e||{}),...pr}:e;
-    const r=view?rateDay(view):null,df=view?deficit(view):null;
+    const pre=state.settings.startDate&&iso<state.settings.startDate;
+    const r=view&&!pre?rateDay(view):null,df=view&&!pre?deficit(view):null;
     if(e&&inPlan(e)&&rateDay(e)){sumD+=deficit(e);nD++;if(['worse','bad','surplus'].includes(rateDay(e)))miss++}
     const planned=!r&&dt>=now;
-    const cls=['mday',r?'r-'+r:'',planned?'plan':'',+dt===+now?'today':'',pr?'pend':'',dt>now?'future':''].join(' ');
+    const cls=['mday',r?'r-'+r:'',pre?'pre':'',planned?'plan':'',+dt===+now?'today':'',pr?'pend':'',dt>now?'future':''].join(' ');
     let small='';if(df!=null)small=(df>=0?'':'+')+fmt(Math.abs(df));else if(planned)small=fmt(planFor(iso));
     let dot='';const prr=view?rateProt(view.protein):null;if(prr)dot=`<i class="pdot" style="background:${RATE_COL[prr]}"></i>`;
     h+=`<button type="button" class="${cls}" data-d="${iso}" aria-pressed="${mSel===iso}" aria-label="${d}. ${r?RATE_TXT[r]:planned?'Ziel '+planFor(iso)+' kcal':'keine Daten'}">${dot}<b>${d}</b><small>${small}</small></button>`;
@@ -796,8 +798,9 @@ function renderDetail(){
   const box=$('mDetail');if(!mSel){box.hidden=true;return}
   const s=state.settings,e=state.entries.find(x=>x.date===mSel),p=planFor(mSel),pt=protTargets(),tb=typicalBurn();
   const dt=parseISO(mSel),wdLong=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][dt.getDay()];
-  const r=e?rateDay(e):null,d=e?deficit(e):null;
-  const status=r?pillR(r,RATE_TXT[r]+` (${d-p>=0?'+':'−'}${fmt(Math.abs(d-p))})`):(e?'<span class="hint">kein Essen erfasst</span>':'<span class="hint">geplant</span>');
+  const preD=state.settings.startDate&&mSel<state.settings.startDate;
+  const r=e&&!preD?rateDay(e):null,d=e?deficit(e):null;
+  const status=preD?'<span class="hint">vor dem Start, zählt nicht zum Countdown</span>':r?pillR(r,RATE_TXT[r]+` (${d-p>=0?'+':'−'}${fmt(Math.abs(d-p))})`):(e?'<span class="hint">kein Essen erfasst</span>':'<span class="hint">geplant</span>');
   const isOverride=dayPlans()[mSel]!=null,wp=weekPlan()[wIdx(dt)];
   let html=`<div class="dhead"><b>${wdLong}, ${dt.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}</b>${status}</div>
   <div class="dmain">
@@ -998,7 +1001,8 @@ function repairEntries(list){
     let date=e.date;
     if(!/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(date||''))date=normDateSegs([String(date||'').replace(/\D/g,'')]);
     if(!date)continue;
-    by[date]={...(by[date]||{}),...e,date};
+    const c={...e};if(c.eaten>15000)delete c.eaten;if(c.active>6000)delete c.active;if(c.rest>6000)delete c.rest;if(c.weight>400)delete c.weight;
+    by[date]={...(by[date]||{}),...c,date};
   }
   return Object.values(by);
 }
@@ -1201,10 +1205,14 @@ $('wizBack').addEventListener('click',()=>{if(wizI>0){wizI--;renderWiz()}});
    Text mit Abschnitten ESSEN / PROTEIN / AKTIV / RUHE / SCHRITTE / GEWICHT, darunter je ein Wert pro Tag
    (Health „Gruppieren nach Tag“, „Fehlende ausfüllen“). Der letzte Wert ist heute, der erste Tag ist angeschnitten. */
 const SEC_KEYS=[[/^(ESSEN|NAHRUNG|KCAL|E)$/,'e'],[/^(PROTEIN|EIWEISS|P)$/,'p'],[/^(AKTIV|AKTIVE ENERGIE|A)$/,'a'],[/^(RUHE|RUHEENERGIE|R)$/,'r'],[/^(SCHRITTE|STEPS|S)$/,'s'],[/^(GEWICHT|WEIGHT|G|W)$/,'w']];
+function parseNumHx(raw){const m=String(raw).replace(/\u00a0/g,' ').match(/-?[\d.,]+/);if(!m)return null;let t=m[0];
+  if(t.includes('.')&&t.includes(','))t=t.lastIndexOf(',')>t.lastIndexOf('.')?t.replace(/\./g,'').replace(',','.'):t.replace(/,/g,'');
+  else if(t.includes(','))t=t.replace(',','.');
+  const v=parseFloat(t);return isNaN(v)?null:v}
 function parseSections(txt){const sec={};let cur=null;
   for(const raw of String(txt).split(/[\r\n]+/)){const l=raw.trim();if(!l)continue;const k=l.toUpperCase().replace(/[:.]/g,'').trim();
     const hit=SEC_KEYS.find(([re])=>re.test(k));if(hit){cur=hit[1];sec[cur]=[];continue}
-    if(cur){const v=parseNum(l);sec[cur].push(v==null?0:v)}}
+    if(cur){const v=parseNumHx(l);sec[cur].push(v==null?0:v)}}
   return sec}
 function baseFromLists(A,R,S){
   const med=l=>{if(!l.length)return null;const q=[...l].sort((x,y)=>x-y);return q[Math.floor(q.length/2)]};
@@ -1226,6 +1234,7 @@ function importSections(sec){
     const wNext=at('w',i+1);/* Gewicht vom Morgen danach */
     if(!(r.e>0||r.a>0||r.rr>0||wNext>0))continue;
     const d=dateOf(i);let e=state.entries.find(x=>x.date===d);if(!e){e={date:d};state.entries.push(e)}
+    if(r.e>15000)r.e=0;if(r.a>6000)r.a=0;if(r.rr>6000)r.rr=0;if(wNext>400)wNext=0;
     if(r.e>0)e.eaten=Math.round(r.e);if(r.p>0)e.protein=Math.round(r.p);if(r.a>0)e.active=Math.round(r.a);if(r.rr>0)e.rest=Math.round(r.rr);if(r.st>0)e.steps=Math.round(r.st);if(wNext>0)e.weight=Math.round(wNext*10)/10;
     days++;
   }
