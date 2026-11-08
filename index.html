@@ -102,6 +102,12 @@ h2{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01
 .wi-res{text-align:center}
 .goal-main{align-items:center;text-align:center}
 .goal-main .sub{font-size:12px;color:var(--muted);font-weight:500}
+.today{background:var(--surface-2);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;text-align:center}
+.today .tl{display:flex;justify-content:center;align-items:baseline;gap:6px;flex-wrap:wrap}
+.today .tl b{font-family:var(--display);font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.today .bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.today .bar i{display:block;height:100%;border-radius:4px}
+.today .tsub{font-size:12px;color:var(--muted)}
 .goal-def{font:inherit;border:0;background:var(--surface-2);border-radius:14px;padding:10px 14px;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;color:var(--fg)}
 .goal-def span{font-weight:700;font-size:16px}
 .goal-def small{font-size:12px;color:var(--muted)}
@@ -352,6 +358,7 @@ code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;backgro
       <div class="goal-main"><span class="label">Essen</span><b><span id="gEat">–</span><small>kcal</small></b><span class="sub" id="gEatSub"></span></div>
       <div class="goal-main"><span class="label">Protein</span><b><span id="gProt">–</span><small>g</small></b><span class="sub" id="gProtSub"></span></div>
     </div>
+    <div class="today" id="gToday" hidden></div>
     <button type="button" class="goal-def" id="gDefBtn"><span id="gDef">–</span><small id="gEnd"></small><em>Ziel ändern</em></button>
     <div class="goal-last" id="gLast"></div>
     <div class="dw">
@@ -364,14 +371,14 @@ code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;backgro
   </section>
 
   <section class="card" id="monthCard">
-    <div class="actions">
+    <div class="actions" id="sendWrap" hidden>
       <button class="btn btn-send" id="sendBtn" type="button" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         Senden
       </button>
     </div>
     <div class="pending" id="pending" hidden></div>
-    <p class="msg" id="importMsg">Kurzbefehl starten: Die Werte erscheinen hier automatisch. Prüfen, dann „Senden“.</p>
+    <p class="msg" id="importMsg">Öffne den Countdown über Kurzbefehl 2, dann aktualisieren sich die Werte automatisch.</p>
     <div class="mhead">
       <button type="button" class="mnav-btn" id="mPrev" aria-label="Vorheriger Monat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
       <h2 id="mTitle">Kalender</h2>
@@ -449,6 +456,9 @@ code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;backgro
         <label class="f" for="sSex">Geschlecht<select class="in" id="sSex"><option value="m">Mann</option><option value="f">Frau</option></select></label>
         <label class="f" for="sAge">Alter<input class="in" id="sAge" type="number" inputmode="numeric" min="14" max="99"></label>
         <label class="f" for="sHeight">Größe (cm)<input class="in" id="sHeight" type="number" inputmode="numeric" min="120" max="230"></label>
+      </div>
+      <div class="row">
+        <label class="f" for="sStartD">Start des Countdowns<input class="in" id="sStartD" type="date"></label>
       </div>
       <div class="row">
         <label class="f" for="sStartW">Startgewicht (kg)<input class="in" id="sStartW" type="number" inputmode="decimal" min="0" step="0.1" placeholder="erster Messwert"></label>
@@ -548,9 +558,10 @@ const sorted=()=>[...state.entries].sort((a,b)=>a.date.localeCompare(b.date));
 function startWeightOf(){const s=state.settings,w=sorted().find(e=>e.weight>0);return s.startWeight||(w&&w.weight)||null}
 function goalKgOf(){const s=state.settings,st=startWeightOf();return (s.goalWeight>0&&st>0)?Math.max(0.5,Math.round((st-s.goalWeight)*10)/10):s.goalKg}
 function goalWeightOf(){const s=state.settings,st=startWeightOf();return s.goalWeight>0?s.goalWeight:(st?st-s.goalKg:null)}
+const inPlan=e=>!state.settings.startDate||e.date>=state.settings.startDate;
 function totals(){
   const s=state.settings,total=goalKgOf()*s.kcalPerKg;
-  const counted=state.entries.filter(e=>deficit(e)!=null);
+  const counted=state.entries.filter(e=>inPlan(e)&&deficit(e)!=null);
   const saved=counted.reduce((a,e)=>a+deficit(e),0);
   const avg=counted.length?saved/counted.length:null;
   const rem=Math.max(0,total-saved);
@@ -694,7 +705,7 @@ function chartWeight(){
   if(pts.length>1)c.mk('text',{x:c.W-c.R,y:c.H-8,'text-anchor':'end'},ddmm(lp.date));
 }
 function chartForecast(){
-  const c=chartCtx(),s=state.settings,t=totals(),data=sorted().filter(e=>deficit(e)!=null);
+  const c=chartCtx(),s=state.settings,t=totals(),data=sorted().filter(e=>inPlan(e)&&deficit(e)!=null);
   if(!data.length){setLegend([['var(--accent)','Noch einzusparen'],['var(--muted)',`Plan (${fmt(s.dailyTarget)} kcal/Tag)`,true]]);return emptyChart(c,'Noch keine Tage mit Essensdaten')}
   c.T=26;c.B=54;
   const day0=parseISO(data[0].date).getTime()-864e5;
@@ -770,7 +781,7 @@ function renderMonth(){
   for(let d=1;d<=days;d++){
     const dt=new Date(y,m,d),iso=isoOf(dt),e=byDate[iso],pr=pend[iso],view=pr?{...(e||{}),...pr}:e;
     const r=view?rateDay(view):null,df=view?deficit(view):null;
-    if(e&&rateDay(e)){sumD+=deficit(e);nD++;if(['worse','bad','surplus'].includes(rateDay(e)))miss++}
+    if(e&&inPlan(e)&&rateDay(e)){sumD+=deficit(e);nD++;if(['worse','bad','surplus'].includes(rateDay(e)))miss++}
     const planned=!r&&dt>=now;
     const cls=['mday',r?'r-'+r:'',planned?'plan':'',+dt===+now?'today':'',pr?'pend':'',dt>now?'future':''].join(' ');
     let small='';if(df!=null)small=(df>=0?'':'+')+fmt(Math.abs(df));else if(planned)small=fmt(planFor(iso));
@@ -814,6 +825,15 @@ function renderGoal(){
   $('gEat').textContent=fmt(eat);$('gEatSub').textContent='bei '+fmt(tb)+' kcal Verbrauch';
   $('gProt').textContent=pt?fmt(pt.goal):'–';$('gProtSub').textContent=pt?'mindestens '+fmt(pt.min)+' g':'';
   $('gDef').textContent=fmt(def)+' kcal Defizit heute';
+  const td=state.today;
+  if(td&&td.date===ti&&(td.eaten>0||td.active>0)){const left=eat-td.eaten,pct=Math.min(100,td.eaten/eat*100);const pp=pt&&td.protein?Math.min(100,td.protein/pt.goal*100):0;
+    const tm=new Date(td.at).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    $('gToday').innerHTML=`<p class="label">Heute bisher · Stand ${tm}</p>
+    <div class="tl"><b>${fmt(Math.abs(left))}</b><span>kcal ${left>=0?'übrig':'drüber'}</span></div>
+    <div class="bar"><i style="width:${pct}%;background:${left>=0?'var(--good)':'var(--bad)'}"></i></div>
+    <span class="tsub">${fmt(td.eaten)} von ${fmt(eat)} kcal gegessen${td.active?` · ${fmt(td.active)} kcal aktiv`:''}</span>
+    ${pt?`<div class="bar"><i style="width:${pp}%;background:var(--accent)"></i></div><span class="tsub">${fmt(td.protein||0)} von ${fmt(pt.goal)} g Protein</span>`:''}`;$('gToday').hidden=false}
+  else $('gToday').hidden=true;
   if(t.rem>0&&s.dailyTarget>0){const d=new Date(Date.now()+Math.ceil(t.rem/s.dailyTarget)*864e5);$('gEnd').textContent='Ziel erreicht am '+d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'})}else $('gEnd').textContent=t.rem===0?'Ziel erreicht':'';
   const last=sorted().filter(e=>e.eaten>0).at(-1);
   if(last){const pl=planFor(last.date),ad=deficit(last),r=rateDay(last);
@@ -827,7 +847,7 @@ function renderGoal(){
 const CAL_DAYS=21;
 function calib(){
   const s=state.settings,k=s.kcalPerKg,all=sorted();
-  const fe=all.find(e=>e.eaten>0);if(!fe)return {n:0,span:0};
+  const fe=all.find(e=>inPlan(e)&&e.eaten>0);if(!fe)return {n:0,span:0};
   const startIso=isoOf(new Date(parseISO(fe.date).getTime()-864e5));
   const W=all.filter(e=>e.weight>0&&e.date>=startIso);
   if(W.length<2)return {n:W.length,span:0};
@@ -931,7 +951,7 @@ function renderWhatIf(){
 function renderSettings(){
   const s=state.settings;
   const gw=goalWeightOf();$('sGoalW').value=gw?Math.round(gw*10)/10:'';showGoalCalc();$('sKcalKg').value=s.kcalPerKg;$('sBaseRest').value=s.baseRest;$('sBaseActive').value=s.baseActive;$('sProtKg').value=s.protPerKg;
-  $('sWatch').checked=!!s.useWatch;$('sSex').value=s.sex||'m';$('sAge').value=s.age??'';$('sHeight').value=s.height??'';$('sActivePct').value=s.activePct;$('sStartW').value=s.startWeight??'';
+  $('sWatch').checked=!!s.useWatch;$('sStartD').value=s.startDate||'';$('sSex').value=s.sex||'m';$('sAge').value=s.age??'';$('sHeight').value=s.height??'';$('sActivePct').value=s.activePct;$('sStartW').value=s.startWeight??'';
 }
 
 /* ---------- Import ---------- */
@@ -958,7 +978,7 @@ function showPending(recs){
   const exists=state.entries.some(e=>e.date===r.date);
   $('importMsg').textContent=(warn.length?warn.join(' '):'Werte erkannt.')+(exists?' Der Tag ist schon da und wird aktualisiert.':'')+' Jetzt „Senden“.';
   $('importMsg').className='msg'+(warn.some(w=>!w.startsWith('Ruheenergie niedrig'))?' err':'');
-  $('sendBtn').disabled=false;
+  $('sendBtn').disabled=false;$('sendWrap').hidden=false;
   const pd=parseISO(r.date);mView={y:pd.getFullYear(),m:pd.getMonth()};mSel=null;renderMonth();
 }
 /* Datum aus Ziffergruppen: yyyyMMdd, ddMMyyyy, dd.MM.yyyy, dd.MM.yy oder yyyy-MM-dd */
@@ -1015,7 +1035,7 @@ $('sendBtn').addEventListener('click',()=>{
   if(!pending)return;
   for(const r of pending){let e=state.entries.find(x=>x.date===r.date);if(!e){e={date:r.date};state.entries.push(e)}Object.assign(e,r)}
   const days=pending.map(r=>ddmm(r.date)).join(', ');pending=null;
-  $('pending').hidden=true;$('sendBtn').disabled=true;
+  $('pending').hidden=true;$('sendBtn').disabled=true;$('sendWrap').hidden=true;
   $('importMsg').textContent=`${days} übernommen.`;$('importMsg').className='msg ok';
   if(/^#kc-/i.test(location.hash)){try{history.replaceState(null,'',location.pathname+location.search)}catch(e){location.hash=''}}
   commit('Übernommen');
@@ -1028,7 +1048,7 @@ function commit(msg){lsSet();render();status(storageOk?msg+' · auf diesem Gerä
 $('saveSettings').addEventListener('click',()=>{
   const n=(id,f)=>{const v=parseFloat($(id).value);return isNaN(v)||v<0?f:v},s=state.settings;
   const gw=parseFloat($('sGoalW').value);s.goalWeight=gw>0?gw:null;s.kcalPerKg=n('sKcalKg',s.kcalPerKg)||s.kcalPerKg;s.baseRest=n('sBaseRest',s.baseRest)||s.baseRest;s.baseActive=n('sBaseActive',s.baseActive);s.protPerKg=n('sProtKg',s.protPerKg)||s.protPerKg;
-  s.useWatch=$('sWatch').checked;s.activePct=Math.min(120,n('sActivePct',s.activePct));s.sex=$('sSex').value;const ag=parseFloat($('sAge').value);s.age=ag>0?ag:s.age;const hg=parseFloat($('sHeight').value);s.height=hg>0?hg:s.height;
+  s.startDate=$('sStartD').value||s.startDate;s.useWatch=$('sWatch').checked;s.activePct=Math.min(120,n('sActivePct',s.activePct));s.sex=$('sSex').value;const ag=parseFloat($('sAge').value);s.age=ag>0?ag:s.age;const hg=parseFloat($('sHeight').value);s.height=hg>0?hg:s.height;
   const sw=parseFloat($('sStartW').value);s.startWeight=sw>0?sw:null;
   if(s.goalWeight>0){const st=startWeightOf();if(st>0)s.goalKg=Math.max(0.5,Math.round((st-s.goalWeight)*10)/10)}
   commit('Einstellungen gespeichert');
@@ -1106,11 +1126,11 @@ function renderWiz(){
   if(step==='watch')h=head('watch','Apple Watch','Hast du deine Apple Watch in den letzten 30 Tagen regelmäßig getragen?')+yn('wWatch',s.hasWatch)+`
     <p class="note" id="wWatchNote">${s.hasWatch===true?'Super. Im nächsten Schritt übertragen wir deinen Verlauf. Trag die Watch auch künftig täglich, dann rechnet der Countdown mit deinem echten Verbrauch.':s.hasWatch===false?'Kein Problem. Der Countdown rechnet dann mit einem geschätzten Verbrauch aus deinem Aktivitätslevel.':'Für einen genauen Countdown trägst du die Watch tagsüber durchgehend.'}</p>`;
   if(step==='history'){const hist=wizHist||(s.ownValues&&s.histDays?{days:s.histDays,rest:s.baseRest,active:s.baseActive}:null);
-    h=head('bolt','Verlauf übertragen','Einmalig: Kurzbefehl 1 liest deine Watch-Daten der letzten Monate und schickt sie hierher.')+`
+    h=head('bolt','Verlauf übertragen','Einmalig: Kurzbefehl 1 holt deine Werte der letzten 5 Monate aus Health und berechnet daraus deinen Verbrauch.')+`
     <ol class="steps-l"><li>Kurzbefehl laden und <b>hinzufügen</b>. Bei der Frage nach der Quelle <b>deine Apple Watch</b> wählen.</li><li>Einmal <b>starten</b> und den Health-Zugriff erlauben. Danach öffnet sich diese Seite wieder.</li></ol>
     <p class="note">Meldung „große Datenmengen“? Einstellungen → Apps → Kurzbefehle → Erweitert → „Teilen großer Datenmengen erlauben“.</p>
     ${scBtn(SHORTCUT_HISTORY,'Kurzbefehl 1 laden')}
-    ${hist?`<div class="waiting ok">${CHK} ${hist.days} Tage ausgewertet: Ruhe ≈ ${fmt(hist.rest)} kcal, aktiv ≈ ${fmt(hist.active)} kcal</div>`:'<p class="note">Ohne Übertragung schätzen wir deinen Verbrauch vorerst.</p>'}`}
+    ${hist?`<div class="waiting ok">${CHK} Verlauf da: Ruhe ≈ ${fmt(hist.rest)} kcal, aktiv ≈ ${fmt(hist.active)} kcal pro Tag</div>`:'<p class="note">Ohne Übertragung schätzen wir deinen Verbrauch vorerst.</p>'}`}
   if(step==='activity'){const opts=[[1.4,'Wenig aktiv','Bürojob, unter 6.000 Schritte'],[1.55,'Mäßig aktiv','6.000–10.000 Schritte'],[1.7,'Aktiv','über 10.000 Schritte oder 3× Sport pro Woche'],[1.85,'Sehr aktiv','körperliche Arbeit oder fast täglich Sport']];
     h=head('bolt','Wie aktiv bist du?','Daraus schätzen wir deinen täglichen Verbrauch.')+`
     <div class="choice" id="wPal">${opts.map(([v,t,d])=>`<button type="button" data-v="${v}" aria-pressed="${Math.abs((s.pal||0)-v)<.01}"><b>${t}</b><span>${d}</span></button>`).join('')}</div>
@@ -1128,16 +1148,16 @@ function renderWiz(){
     (s.needYazio?`<div class="appcard"><b>Yazio</b><ol class="steps-l"><li>Yazio → <b>Profil</b> → <b>Zahnrad</b></li><li><b>Apple Health</b> → alles einschalten</li></ol></div>`:'')+
     (s.needScale?`<div class="appcard"><b>Renpho</b><ol class="steps-l"><li>Renpho → <b>Ich</b> → <b>Integrationen</b></li><li><b>Apple Health</b> → Gewicht erlauben</li></ol></div>`:'')+
     `<p class="note">Andere App? In den Einstellungen „Apple Health“ suchen und einschalten.</p>`;
-  if(step==='daily')h=head('sun','Kurzbefehl 2: Tageswerte','Schickt jeden Morgen die Werte von gestern an den Countdown.')+`
+  if(step==='daily')h=head('sun','Kurzbefehl 2: Countdown öffnen','Dein normaler Zugang: Er holt die neuesten Werte aus Health und öffnet den Countdown.')+`
     <ol class="steps-l"><li>Laden und <b>hinzufügen</b>.${s.hasWatch?' Als Quelle <b>deine Apple Watch</b> wählen.':''}</li><li>Einmal <b>starten</b> und Health-Zugriff erlauben.</li></ol>
     ${scBtn(SHORTCUT_DAILY,'Kurzbefehl 2 laden')}
-    <div class="waiting ${wizGot?'ok':''}">${wizGot?`${CHK} Daten vom ${weekday(wizGot.date)} ${ddmm(wizGot.date)} empfangen`:'<i class="spin"></i> Warte auf den ersten Start …'}</div>
-    <p class="note">Täglich: morgens wiegen, Kurzbefehl 2 antippen, „Senden“.</p>`;
-  if(step==='home')h=head('home','Aufs Home-Bildschirm','Damit du jederzeit reinschauen kannst.')+`
-    <ol class="steps-l"><li>Im Browser auf <b>Teilen</b> tippen</li><li><b>Zum Home-Bildschirm</b> wählen</li><li>Schalter <b>„Als Web-App öffnen“</b> (falls da): <b>aus</b></li><li><b>Hinzufügen</b></li></ol>
-    <p class="note">Nutze dafür deinen Standard-Browser (Safari oder Chrome). Kurzbefehle öffnen Links immer dort, und nur so sehen Icon und Kurzbefehl dieselben Daten.</p>`;
+    <div class="waiting ${wizGot?'ok':''}">${wizGot?`${CHK} Verbunden, Werte bis ${weekday(wizGot.date)} ${ddmm(wizGot.date)} sind da`:'<i class="spin"></i> Warte auf den ersten Start …'}</div>
+    <p class="note">Ab jetzt öffnest du den Countdown immer über Kurzbefehl 2. Die Werte aktualisieren sich dabei automatisch.</p>`;
+  if(step==='home')h=head('home','Aufs Home-Bildschirm','Kurzbefehl 2 bekommt ein eigenes Icon und wird so zu deiner App.')+`
+    <ol class="steps-l"><li>App <b>Kurzbefehle</b> öffnen</li><li>Kurzbefehl 2 <b>lange drücken</b> → <b>Teilen</b></li><li><b>Zum Home-Bildschirm</b> → Name z. B. „Countdown“ → <b>Hinzufügen</b></li></ol>
+    <p class="note">Kurzbefehl 1 brauchst du nur einmal. Den kannst du danach in der Kurzbefehle-App lassen.</p>`;
   if(step==='done')h=head('check','Alles bereit')+wizTilesHTML()+`
-    <ul class="reqs"><li><i class="tick">1</i><div><b>Morgens wiegen</b></div></li><li><i class="tick">2</i><div><b>Kurzbefehl 2 antippen → „Senden“</b></div></li><li><i class="tick">3</i><div><b>Nach 3 Wochen</b><span>verfeinert der Abgleich mit der Waage deine Werte</span></div></li></ul>`;
+    <ul class="reqs"><li><i class="tick">1</i><div><b>Morgens wiegen</b></div></li><li><i class="tick">2</i><div><b>Countdown-Icon antippen</b><span>die Werte aktualisieren sich automatisch</span></div></li><li><i class="tick">3</i><div><b>Nach 3 Wochen</b><span>verfeinert der Abgleich mit der Waage deine Werte</span></div></li></ul>`;
   $('wizBody').innerHTML=`<div class="ctr">${h}</div>`;$('wizBody').scrollTop=0;
   const pick=(id,cb)=>{const g=$(id);if(!g)return;g.onclick=e=>{const b=e.target.closest('button');if(!b)return;g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));cb&&cb(b.dataset.v)}};
   if(step==='profile'){const upd=()=>{const b=bmrOf(document.querySelector('#wSex [aria-pressed="true"]').dataset.v,wizVal('wAge'),wizVal('wH'),wizVal('wW'));$('wBmr').textContent=b?`Grundumsatz ca. ${fmt(b)} kcal pro Tag`:'Bitte alle drei Felder ausfüllen.'};
@@ -1167,7 +1187,7 @@ function wizCommitStep(){
   lsSet();return true;
 }
 $('wizNext').addEventListener('click',()=>{
-  if(WIZ[wizI]==='done'){const s=state.settings;s.onboarded=true;
+  if(WIZ[wizI]==='done'){const s=state.settings;s.onboarded=true;if(!s.startDate)s.startDate=todayISO2();
     if(wizGot){let e=state.entries.find(x=>x.date===wizGot.date);if(!e){e={date:wizGot.date};state.entries.push(e)}Object.assign(e,wizGot);pending=null;$('pending').hidden=true;$('sendBtn').disabled=true}
     try{history.replaceState(null,'',location.pathname)}catch(e){}
     closeWiz();commit(wizGot?'Eingerichtet und ersten Tag übernommen':'Eingerichtet');window.scrollTo(0,0);return}
@@ -1175,31 +1195,54 @@ $('wizNext').addEventListener('click',()=>{
 });
 $('wizBack').addEventListener('click',()=>{if(wizI>0){wizI--;renderWiz()}});
 
-/* ---------- Verlauf aus Kurzbefehl 1 (#hx=…) ---------- */
-function parseHistory(txt){
-  const sec={a:[],r:[],s:[]};let cur=null;
-  for(const raw of String(txt).split(/[\r\n]+/)){const l=raw.trim();if(!l)continue;
-    const k=l.toUpperCase();if(/^(A|AKTIV)/.test(k)&&!/\d/.test(k)){cur='a';continue}if(/^(R|RUHE)/.test(k)&&!/\d/.test(k)){cur='r';continue}if(/^(S|SCHRITTE|STEPS)/.test(k)&&!/\d/.test(k)){cur='s';continue}
+/* ---------- Daten aus den Kurzbefehlen (#hx=…) ----------
+   Text mit Abschnitten ESSEN / PROTEIN / AKTIV / RUHE / SCHRITTE / GEWICHT, darunter je ein Wert pro Tag
+   (Health „Gruppieren nach Tag“, „Fehlende ausfüllen“). Der letzte Wert ist heute, der erste Tag ist angeschnitten. */
+const SEC_KEYS=[[/^(ESSEN|NAHRUNG|KCAL|E)$/,'e'],[/^(PROTEIN|EIWEISS|P)$/,'p'],[/^(AKTIV|AKTIVE ENERGIE|A)$/,'a'],[/^(RUHE|RUHEENERGIE|R)$/,'r'],[/^(SCHRITTE|STEPS|S)$/,'s'],[/^(GEWICHT|WEIGHT|G|W)$/,'w']];
+function parseSections(txt){const sec={};let cur=null;
+  for(const raw of String(txt).split(/[\r\n]+/)){const l=raw.trim();if(!l)continue;const k=l.toUpperCase().replace(/[:.]/g,'').trim();
+    const hit=SEC_KEYS.find(([re])=>re.test(k));if(hit){cur=hit[1];sec[cur]=[];continue}
     if(cur){const v=parseNum(l);sec[cur].push(v==null?0:v)}}
-  const n=Math.max(sec.a.length,sec.r.length);if(n<7)return null;
-  const pad=(arr)=>{const o=arr.slice(0,-1);return o};/* letzter Wert = heute, unvollständig */
-  const A=pad(sec.a),R=pad(sec.r),S=pad(sec.s);
+  return sec}
+function baseFromLists(A,R,S){
   const med=l=>{if(!l.length)return null;const q=[...l].sort((x,y)=>x-y);return q[Math.floor(q.length/2)]};
-  const rv=R.filter(v=>v>500);if(rv.length<5)return null;
-  const top=[...rv].sort((x,y)=>x-y)[Math.floor(rv.length*.9)];const fullRest=rv.filter(v=>v>=top*.85);
-  const rest=med(fullRest);
-  const idx=[];for(let i=0;i<A.length;i++){const r=R[i]||0,st=S[i];if(r>=rest*.85&&A[i]>=100&&(st==null||st>=1500))idx.push(i)}
-  const recent=idx.slice(-60).map(i=>A[i]);const active=med(recent.length>=7?recent:idx.map(i=>A[i]));
-  if(!rest||active==null)return null;
+  const rv=R.filter(v=>v>500);if(rv.length<10)return null;
+  const top=[...rv].sort((x,y)=>x-y)[Math.floor(rv.length*.9)],rest=med(rv.filter(v=>v>=top*.85));
+  const idx=[];for(let i=0;i<A.length;i++){const st=S[i];if((R[i]||0)>=rest*.85&&A[i]>=100&&(st==null||st>=1500))idx.push(i)}
+  const recent=idx.slice(-60).map(i=>A[i]),active=med(recent.length>=7?recent:idx.map(i=>A[i]));
+  if(!rest||active==null||idx.length<10)return null;
   return {days:idx.length,rest:Math.round(rest/10)*10,active:Math.round(active/10)*10};
 }
-function applyHistory(h){const s=state.settings;s.baseRest=h.rest;s.baseActive=h.active;s.ownValues=true;s.histDays=h.days;lsSet()}
+function importSections(sec){
+  const n=Math.max(0,...Object.values(sec).map(l=>l.length));if(n<2)return null;
+  const today=new Date();today.setHours(0,0,0,0);
+  const at=(k,i)=>{const l=sec[k];if(!l)return 0;const j=i-(n-l.length);return j>=0?l[j]:0};
+  const dateOf=i=>isoOf(new Date(today.getTime()-(n-1-i)*864e5));
+  let days=0;
+  for(let i=1;i<n-1;i++){/* Tag 0 ist angeschnitten, Tag n-1 ist heute */
+    const r={e:at('e',i),p:at('p',i),a:at('a',i),rr:at('r',i),st:at('s',i)};
+    const wNext=at('w',i+1);/* Gewicht vom Morgen danach */
+    if(!(r.e>0||r.a>0||r.rr>0||wNext>0))continue;
+    const d=dateOf(i);let e=state.entries.find(x=>x.date===d);if(!e){e={date:d};state.entries.push(e)}
+    if(r.e>0)e.eaten=Math.round(r.e);if(r.p>0)e.protein=Math.round(r.p);if(r.a>0)e.active=Math.round(r.a);if(r.rr>0)e.rest=Math.round(r.rr);if(r.st>0)e.steps=Math.round(r.st);if(wNext>0)e.weight=Math.round(wNext*10)/10;
+    days++;
+  }
+  const t=n-1;state.today={date:dateOf(t),eaten:Math.round(at('e',t)),protein:Math.round(at('p',t)),active:Math.round(at('a',t)),rest:Math.round(at('r',t)),steps:Math.round(at('s',t)),at:Date.now()};
+  let base=null;if(n>=30&&sec.a&&sec.r){base=baseFromLists((sec.a||[]).slice(1,-1),(sec.r||[]).slice(1,-1),(sec.s||[]).slice(1,-1));
+    if(base){const s=state.settings;s.baseRest=base.rest;s.baseActive=base.active;s.ownValues=true;s.histDays=base.days;s.hasWatch=true;s.useWatch=true}}
+  return {days,n,base};
+}
 function checkHistHash(){if(!/^#hx=/.test(location.hash))return false;let txt='';try{txt=decodeURIComponent(location.hash.slice(4))}catch(e){txt=location.hash.slice(4)}
-  const h=parseHistory(txt);try{history.replaceState(null,'',location.pathname)}catch(e){}
-  if(!h){status('Der Verlauf konnte nicht gelesen werden. Wurde beim Kurzbefehl deine Apple Watch gewählt?');return true}
-  applyHistory(h);wizHist=h;
-  if(!state.settings.onboarded){state.settings.hasWatch=true;WIZ=wizSteps();openWiz(WIZ.indexOf('history'))}
-  else{render();status(`Verlauf übernommen: Ruheenergie ${fmt(h.rest)} kcal, aktiv ${fmt(h.active)} kcal`)}
+  try{history.replaceState(null,'',location.pathname)}catch(e){}
+  const res=importSections(parseSections(txt));
+  if(!res){status('Die Werte vom Kurzbefehl konnten nicht gelesen werden.');return true}
+  lsSet();
+  if(res.base)wizHist=res.base;
+  const last=sorted().filter(e=>e.eaten>0||e.rest>0).at(-1);wizGot=last||{date:state.today.date};
+  if(!state.settings.onboarded){WIZ=wizSteps();const want=res.base?'history':'daily';const i=WIZ.indexOf(want);openWiz(i>=0?i:wizStepSaved());render();return true}
+  render();
+  $('importMsg').textContent=res.base?`Verlauf übernommen: ${res.days} Tage · Ruhe ${fmt(res.base.rest)} kcal, aktiv ${fmt(res.base.active)} kcal`:`Aktualisiert: ${res.days} ${res.days===1?'Tag':'Tage'} bis gestern, heute live`;
+  $('importMsg').className='msg ok';status('Aktualisiert · auf diesem Gerät gespeichert');
   return true}
 
 /* ---------- Dialog ---------- */
@@ -1228,7 +1271,7 @@ $('reEstimate').addEventListener('click',()=>{const s=state.settings,sex=$('sSex
 /* ---------- Start ---------- */
 (function boot(){
   const local=lsGet();
-  if(local&&local.settings&&Array.isArray(local.entries)){state={settings:{...DEFAULT.settings,...local.settings},entries:repairEntries(local.entries)}}
+  if(local&&local.settings&&Array.isArray(local.entries)){state={settings:{...DEFAULT.settings,...local.settings},entries:repairEntries(local.entries),today:local.today||null}}
   render();
   if(/^#import=/.test(location.hash)){offerImport(location.hash.slice(8));return}
   if(checkHistHash())return;
