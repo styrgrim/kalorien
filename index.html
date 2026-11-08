@@ -286,6 +286,8 @@ select.in{appearance:none;-webkit-appearance:none}
 .r-surplus{background:var(--bad-soft)!important;color:var(--bad)!important}
 .mleg{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;font-size:12px;color:var(--muted)}
 .mleg i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-2px;margin-right:5px}
+.mdetail.inrow{grid-column:1/-1;margin:3px 0 4px;border:1.5px solid var(--line);animation:dOpen .2s ease-out}
+@keyframes dOpen{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 .mdetail{background:var(--surface-2);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .mdetail .dh{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .mdetail .dh b{font-weight:700}
@@ -411,7 +413,6 @@ code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;backgro
     </div>
     <p class="hint" style="text-align:center;margin:6px 0 0">Zahl im Tag = Defizit (grau = geplant). Lange drücken: Tag zählt / zählt nicht.</p>
     </div>
-    <div class="mdetail" id="mDetail" hidden></div>
     <p class="hint" id="mSum"></p>
   </section>
 
@@ -817,14 +818,16 @@ function renderMonth(){
     const cls=['mday',r?'r-'+r:'',pre?'pre':'',planned?'plan':'',+dt===+now?'today':'',pr?'pend':'',dt>now?'future':''].join(' ');
     let small='';if(df!=null)small=(df>=0?'':'+')+fmt(Math.abs(df));else if(planned)small=fmt(planFor(iso));
     let dot='';const prr=view?rateProt(view.protein):null;if(prr)dot=`<i class="pdot" style="background:${RATE_COL[prr]}"></i>`;
+    const rowEnd=(off+d)%7===0||d===days,selRow=mSel&&mSel.slice(0,7)===iso.slice(0,7)&&Math.floor((off+(+mSel.slice(8))-1)/7)===Math.floor((off+d-1)/7);
     h+=`<button type="button" class="${cls}" data-d="${iso}" aria-pressed="${mSel===iso}" aria-label="${d}. ${r?RATE_TXT[r]:planned?'Ziel '+planFor(iso)+' kcal':'keine Daten'}">${dot}<b>${d}</b><small>${small}</small></button>`;
+    if(rowEnd&&selRow)h+='<div class="mdetail inrow" id="mDetail"></div>';
   }
   $('mGrid').innerHTML=h;
   $('mSum').textContent=nD?`${nD} ${nD===1?'Tag':'Tage'} erfasst · Ø Defizit ${fmt(sumD/nD)} kcal · gesamt ≈ ${fmt1(sumD/state.settings.kcalPerKg)} kg · ${miss?miss+'× unter Ziel':'kein Tag unter Ziel'}`:'Tippe einen Tag an, um sein Ziel zu ändern.';
   renderDetail();
 }
 function renderDetail(){
-  const box=$('mDetail');if(!mSel){box.hidden=true;return}
+  const box=$('mDetail');if(!mSel||!box)return;
   const s=state.settings,e=state.entries.find(x=>x.date===mSel),p=planFor(mSel),pt=protTargets(),tb=typicalBurn();
   const dt=parseISO(mSel),wdLong=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][dt.getDay()];
   const preD=!countsDate(mSel);
