@@ -416,18 +416,6 @@ code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;backgro
   </section>
 
   <section class="card">
-    <div class="card-head"><h2>Letzte Tage</h2><span class="label" id="tblCount"></span></div>
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr><th>Tag</th><th>Gegessen</th><th>Verbrauch</th><th>Defizit</th><th>Protein</th><th>Schritte</th><th>Gewicht</th><th></th></tr></thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-    <p class="hint" id="estNote" hidden>* Verbrauch geschätzt mit deinen typischen Werten, weil die Watch an dem Tag nicht durchgehend getragen wurde.</p>
-    <p class="empty" id="emptyTbl" hidden>Noch keine Tage. Öffne Winter Arc über Kurzbefehl 2, dann erscheinen sie hier.</p>
-  </section>
-
-  <section class="card">
     <div class="card-head center"><h2 id="chartTitle">Prognose bis zum Ziel</h2></div>
     <svg class="chart" id="chart" role="img" aria-label="Prognose"></svg>
     <div class="legend center" id="legend"></div>
@@ -466,6 +454,20 @@ code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;backgro
     <p class="cal-verdict" id="calVerdict"></p>
     <div class="wi-actions"><span class="hint" id="calHint"></span><button class="btn-ghost" type="button" id="calApply" hidden>Übernehmen</button></div>
   </section>
+
+  <details class="card" id="histCard">
+    <summary><h2>Historie</h2><span class="label" id="tblCount" style="margin-left:auto"></span></summary>
+    <div class="inner">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Tag</th><th>Gegessen</th><th>Verbrauch</th><th>Defizit</th><th>Protein</th><th>Schritte</th><th>Gewicht</th><th></th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="hint" id="estNote" hidden>* Verbrauch geschätzt mit deinen typischen Werten, weil die Watch an dem Tag nicht durchgehend getragen wurde.</p>
+    <p class="empty" id="emptyTbl" hidden>Noch keine Tage. Öffne Winter Arc über Kurzbefehl 2, dann erscheinen sie hier.</p>
+    </div>
+  </details>
 
   <details class="card" id="settingsCard">
     <summary><h2>Einstellungen</h2></summary>
@@ -906,7 +908,7 @@ function calib(){
 let calSuggest=null;
 function renderCal(){
   const s=state.settings,c=calib();
-  const sp=c.span||0;$('calSpan').textContent=c.n?`${c.n} Messungen · ${sp} Tage`:'';
+  const sp=c.span||0;$('calSpan').textContent=c.n?`${c.n} ${c.n===1?"Messung":"Messungen"} · ${sp} ${sp===1?"Tag":"Tage"}`:'';
   const ready=sp>=CAL_DAYS&&c.n>=10&&c.eatDays>=14;
   $('calProgWrap').hidden=ready;$('calProg').style.width=Math.min(100,sp/CAL_DAYS*100)+'%';
   const sg=v=>(v>0?'−':v<0?'+':'±')+fmt1(Math.abs(v))+' kg';
