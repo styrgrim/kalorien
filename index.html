@@ -127,6 +127,7 @@ h2{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01
 .pill.r-better,.pill.r-ok,.pill.r-worse,.pill.r-bad,.pill.r-surplus{font-weight:700}
 .mleg i.dt{border-radius:50%;width:9px;height:9px;vertical-align:0}
 .infobtn{display:flex;margin:10px auto 0;width:32px;height:32px;padding:5px;border:0;border-radius:50%;background:none;color:var(--muted);cursor:pointer}.infobtn svg{width:22px;height:22px}.infobtn[aria-expanded="true"]{color:var(--accent);background:var(--accent-soft)}
+tr.off td{opacity:.45}tr.off td:last-child{opacity:1}
 .mday.pre{opacity:.4;filter:grayscale(1)}
 .mday{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;transition:transform .8s}
 .mday.lp{transform:scale(.88)}
@@ -624,13 +625,13 @@ function renderTable(){
   $('emptyTbl').hidden=rows.length>0;$('estNote').hidden=!rows.some(isEstimated);
   $('tblCount').textContent=state.entries.length?`${state.entries.length} ${state.entries.length===1?'Tag':'Tage'}`:'';
   for(const e of rows){
-    const d=deficit(e),tr=document.createElement('tr');
+    const d=deficit(e),tr=document.createElement('tr'),off=!countsDate(e.date);if(off){tr.className='off';tr.title='zählt nicht zum Countdown'}
     const cell=(html,cls)=>{const td=document.createElement('td');if(cls)td.className=cls;td.innerHTML=html;tr.append(td);return td};
     cell(`<b>${weekday(e.date)} ${ddmm(e.date)}</b>`,'day');
     cell(e.eaten>0?fmt(e.eaten):'–');
     cell(fmt(burnOf(e))+(isEstimated(e)?'<span class="est" title="geschätzt: Watch nicht den ganzen Tag getragen">*</span>':''));
-    cell(d==null?'<span class="pill none">–</span>':pillR(rateDay(e),`${d>=0?'−':'+'}${fmt(Math.abs(d))}`));
-    cell(e.protein>0?`<span style="color:${RATE_COL[rateProt(e.protein)]||'inherit'};font-weight:600">${fmt(e.protein)} g</span>`:'–');
+    cell(d==null?'<span class="pill none">–</span>':off?`<span class="pill none">${d>=0?'−':'+'}${fmt(Math.abs(d))}</span>`:pillR(rateDay(e),`${d>=0?'−':'+'}${fmt(Math.abs(d))}`));
+    cell(e.protein>0?`<span style="color:${off?'inherit':RATE_COL[rateProt(e.protein)]||'inherit'};font-weight:600">${fmt(e.protein)} g</span>`:'–');
     cell(e.steps>0?fmt(e.steps):'–');
     cell(e.weight>0?fmt1(e.weight)+' kg':'–');
     const td=cell('');const b=document.createElement('button');b.type='button';b.className='del';b.textContent='×';b.setAttribute('aria-label',`Eintrag ${ddmm(e.date)} löschen`);
