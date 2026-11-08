@@ -818,7 +818,7 @@ function renderDetail(){
   </div>`;
   if(e){const prr=rateProt(e.protein),pc=prr?RATE_COL[prr]:'';
     html+=`<div class="drow"><span><b>${e.eaten>0?fmt(e.eaten):'–'}</b> gegessen</span><span><b>${fmt(burnOf(e))}${isEstimated(e)?'*':''}</b> verbraucht</span><span><b style="${pc?'color:'+pc:''}">${e.protein>0?fmt(e.protein)+' g':'–'}</b> Protein</span></div>
-    <div class="drow"><span><b>${e.steps>0?fmt(e.steps):'–'}</b> Schritte</span><span><b>${e.active>0?fmt(e.active):'–'}</b> aktiv</span>${e.weight>0?`<span><b>${fmt1(e.weight)} kg</b> am Morgen danach</span>`:''}</div>`;
+    <div class="drow"><span><b>${e.steps>0?fmt(e.steps):'–'}</b> Schritte</span><span><b>${e.active>0?fmt(e.active):'–'}</b> aktiv</span>${e.weight>0?`<span><b>${fmt1(e.weight)} kg</b> Gewicht</span>`:''}</div>`;
     if(isEstimated(e))html+='<p class="hint">* geschätzt, die Watch wurde nicht durchgehend getragen</p>';
   }else if(pt)html+=`<div class="drow"><span>Protein <b>${fmt(pt.goal)} g</b> (mindestens ${fmt(pt.min)} g)</span></div>`;
   if(isOverride&&p!==wp)html+=`<div class="drow"><button type="button" class="linkbtn" id="dAll">Für alle ${wdLong}e übernehmen</button><button type="button" class="linkbtn" id="dReset">Zurück auf ${fmt(wp)}</button></div>`;
@@ -1164,7 +1164,7 @@ function renderWiz(){
   if(step==='daily')h=head('sun','Kurzbefehl 2: Winter Arc öffnen','Dein normaler Zugang: Er holt die neuesten Werte aus Health und öffnet Winter Arc.')+`
     <ol class="steps-l"><li>Laden und <b>hinzufügen</b>.</li><li>Einmal <b>starten</b> und Health-Zugriff erlauben.</li></ol>
     ${scBtn(SHORTCUT_DAILY,'Kurzbefehl 2 laden')}
-    <div class="waiting ${wizGot?'ok':''}">${wizGot?`${CHK} Verbunden, Werte bis ${weekday(wizGot.date)} ${ddmm(wizGot.date)} sind da`:'<i class="spin"></i> Warte auf den ersten Start …'}</div>
+    <div class="waiting ${wizGot?'ok':''}">${wizGot?`${CHK} Verbunden${state.today&&state.today.date===todayISO2()&&(state.today.eaten>0||state.today.active>0||state.today.steps>0)?', Werte bis heute (live) sind da':`, Werte bis ${weekday(wizGot.date)} ${ddmm(wizGot.date)} sind da`}`:'<i class="spin"></i> Warte auf den ersten Start …'}</div>
     ${wizRecv&&wizRecv.report&&wizRecv.n<30?`<div class="secrep">${secRepHTML(wizRecv.report)}</div>`:''}
     <p class="note">Ab jetzt öffnest du den Countdown immer über Kurzbefehl 2. Die Werte aktualisieren sich dabei automatisch.</p>`;
   if(step==='home')h=head('home','Aufs Home-Bildschirm','Kurzbefehl 2 bekommt ein eigenes Icon und wird so zu deiner App.')+`
@@ -1253,13 +1253,14 @@ function importSections(sec){
   let days=0;
   for(let i=1;i<n-1;i++){/* Tag 0 ist angeschnitten, Tag n-1 ist heute */
     const r={e:at('e',i),p:at('p',i),a:at('a',i),rr:at('r',i),st:at('s',i)};
-    const wNext=at('w',i+1);/* Gewicht vom Morgen danach */
-    if(!(r.e>0||r.a>0||r.rr>0||wNext>0))continue;
+    if(!(r.e>0||r.a>0||r.rr>0))continue;
     const d=dateOf(i);let e=state.entries.find(x=>x.date===d);if(!e){e={date:d};state.entries.push(e)}
-    if(r.e>15000)r.e=0;if(r.a>6000)r.a=0;if(r.rr>6000)r.rr=0;if(wNext>400)wNext=0;
-    if(r.e>0)e.eaten=Math.round(r.e);if(r.p>0)e.protein=Math.round(r.p);if(r.a>0)e.active=Math.round(r.a);if(r.rr>0)e.rest=Math.round(r.rr);if(r.st>0)e.steps=Math.round(r.st);if(wNext>0)e.weight=Math.round(wNext*10)/10;
+    if(r.e>15000)r.e=0;if(r.a>6000)r.a=0;if(r.rr>6000)r.rr=0;
+    if(r.e>0)e.eaten=Math.round(r.e);if(r.p>0)e.protein=Math.round(r.p);if(r.a>0)e.active=Math.round(r.a);if(r.rr>0)e.rest=Math.round(r.rr);if(r.st>0)e.steps=Math.round(r.st);
     days++;
   }
+  /* Gewicht gehört zum Tag der Messung, auch heute */
+  for(let i=0;i<n;i++){const w=at('w',i);if(!(w>0&&w<=400))continue;const d=dateOf(i);let e=state.entries.find(x=>x.date===d);if(!e){e={date:d};state.entries.push(e)}e.weight=Math.round(w*10)/10}
   const t=n-1;state.today={date:dateOf(t),eaten:Math.round(at('e',t)),protein:Math.round(at('p',t)),active:Math.round(at('a',t)),rest:Math.round(at('r',t)),steps:Math.round(at('s',t)),at:Date.now()};
   let base=null;if(n>=30&&sec.a&&!(sec.r||[]).some(v=>v>500)){const A=(sec.a||[]).slice(1,-1),S=(sec.s||[]).slice(1,-1);const v=A.filter((x,i)=>x>=100&&(S[i]==null||S[i]>=1500)).slice(-60).sort((x,y)=>x-y);
     if(v.length>=14){const s=state.settings;s.baseActive=Math.round(v[Math.floor(v.length/2)]/10)*10;s.hasWatch=true;s.useWatch=true;s.histDays=v.length}}
