@@ -659,7 +659,7 @@ function chartDW(){
   const all=sorted(),lastD=all.length?parseISO(all.at(-1).date):new Date();
   const N=dwN,days=[];document.querySelectorAll('.dw-seg button').forEach(b=>b.setAttribute('aria-selected',+b.dataset.n===N));for(let i=N-1;i>=0;i--){const d=new Date(lastD.getTime()-i*864e5);days.push(isoOf(d))}
   const by=Object.fromEntries(all.map(e=>[e.date,e]));
-  const defs=days.map(d=>by[d]?deficit(by[d]):null),plans=days.map(planFor),ws=days.map(d=>by[d]&&by[d].weight>0?by[d].weight:null);
+  const defs=days.map(d=>by[d]&&countsDate(d)?deficit(by[d]):null),plans=days.map(planFor),ws=days.map(d=>by[d]&&by[d].weight>0?by[d].weight:null);
   $('legendDW').innerHTML='<span><i style="background:var(--good)"></i>Defizit</span><span><i style="background:var(--accent)"></i>Ziel</span><span><i style="background:none;border-top:2px solid var(--fg);height:0"></i>Gewicht</span>';
   if(!defs.some(v=>v!=null))return emptyChart(c,'Noch keine Tage mit Essensdaten');
   const dv=defs.filter(v=>v!=null);let lo=Math.min(0,...dv),hi=Math.max(...plans,...dv);hi+=(hi-lo)*.12;if(lo<0)lo-=(hi-lo)*.08;
@@ -818,7 +818,7 @@ function renderDetail(){
   const dt=parseISO(mSel),wdLong=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][dt.getDay()];
   const preD=!countsDate(mSel);
   const r=e&&!preD?rateDay(e):null,d=e?deficit(e):null;
-  const status=preD?'<span class="hint">zählt nicht · lange drücken zum Aktivieren</span>':r?pillR(r,RATE_TXT[r]+` (${d-p>=0?'+':'−'}${fmt(Math.abs(d-p))})`):(e?'<span class="hint">kein Essen erfasst</span>':'<span class="hint">geplant</span>');const liveNote=e&&e.live?'<p class="hint">Heute live: Verbrauch = volle Ruheenergie + bisherige Aktivität. Der Wert ändert sich bis Mitternacht.</p>':'';
+  const status=preD?'<span class="hint">zählt nicht zum Countdown</span>':r?pillR(r,RATE_TXT[r]+` (${d-p>=0?'+':'−'}${fmt(Math.abs(d-p))})`):(e?'<span class="hint">kein Essen erfasst</span>':'<span class="hint">geplant</span>');const liveNote=e&&e.live?'<p class="hint">Heute live: Verbrauch = volle Ruheenergie + bisherige Aktivität. Der Wert ändert sich bis Mitternacht.</p>':'';
   const isOverride=dayPlans()[mSel]!=null,wp=weekPlan()[wIdx(dt)];
   let html=`<div class="dhead"><b>${wdLong}, ${dt.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}</b>${status}</div>
   <div class="dmain">
@@ -831,7 +831,9 @@ function renderDetail(){
     if(isEstimated(e))html+='<p class="hint">* geschätzt, die Watch wurde nicht durchgehend getragen</p>';
   }else if(pt)html+=`<div class="drow"><span>Protein <b>${fmt(pt.goal)} g</b> (mindestens ${fmt(pt.min)} g)</span></div>`;
   if(isOverride&&p!==wp)html+=`<div class="drow"><button type="button" class="linkbtn" id="dAll">Für alle ${wdLong}e übernehmen</button><button type="button" class="linkbtn" id="dReset">Zurück auf ${fmt(wp)}</button></div>`;
+  if(mSel<=todayISO2())html+=`<div class="drow"><button type="button" class="linkbtn" id="dCount">${preD?'Diesen Tag mitzählen':'Diesen Tag nicht mitzählen'}</button></div>`;
   box.innerHTML=html+liveNote;box.hidden=false;
+  if($('dCount'))$('dCount').onclick=()=>toggleCount(mSel);
   const setP=v=>{dayPlans()[mSel]=Math.min(1500,Math.max(0,v));commit(`${ddmm(mSel)}: Ziel ${fmt(dayPlans()[mSel])} kcal`)};
   $('dMinus').onclick=()=>setP(p-50);$('dPlus').onclick=()=>setP(p+50);
   if($('dAll'))$('dAll').onclick=()=>{const wd=wIdx(dt);weekPlan()[wd]=p;const dp=dayPlans();for(const k of Object.keys(dp))if(wIdx(parseISO(k))===wd&&k>=mSel)delete dp[k];syncTarget();commit(`Alle ${wdLong}e: ${fmt(p)} kcal`)};
@@ -1087,10 +1089,11 @@ document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',(
 try{chartMode=localStorage.getItem('kc-chart')||'deficit'}catch(e){}
 let rz;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{renderChart();renderWhatIf();chartDW()},150)});
 let wiRaf;$('wiSlider').addEventListener('input',e=>{wiRate=+e.target.value;cancelAnimationFrame(wiRaf);wiRaf=requestAnimationFrame(renderWhatIf)});
+function toggleCount(d){const now=!countsDate(d),def=!state.settings.startDate||d>=state.settings.startDate;
+  if(now===def)delete dayInc()[d];else dayInc()[d]=now;try{navigator.vibrate&&navigator.vibrate(20)}catch(e){}mSel=d;commit(`${ddmm(d)} ${now?'zählt jetzt':'zählt nicht mehr'}`)}
 let lpT=null,lpFired=false,lpXY=null;
 $('mGrid').addEventListener('pointerdown',ev=>{const b=ev.target.closest('button[data-d]');if(!b)return;lpFired=false;lpXY=[ev.clientX,ev.clientY];clearTimeout(lpT);b.classList.add('lp');
-  lpT=setTimeout(()=>{b.classList.remove('lp');const d=b.dataset.d;if(d>todayISO2())return;lpFired=true;const now=!countsDate(d),def=!state.settings.startDate||d>=state.settings.startDate;
-    if(now===def)delete dayInc()[d];else dayInc()[d]=now;try{navigator.vibrate&&navigator.vibrate(20)}catch(e){}mSel=d;commit(`${ddmm(d)} ${now?'zählt jetzt':'zählt nicht mehr'}`)},800)});
+  lpT=setTimeout(()=>{b.classList.remove('lp');const d=b.dataset.d;if(d>todayISO2())return;lpFired=true;setTimeout(()=>{lpFired=false},700);toggleCount(d)},700)});
 const lpCancel=ev=>{if(ev&&ev.type==='pointermove'&&lpXY&&Math.hypot(ev.clientX-lpXY[0],ev.clientY-lpXY[1])<10)return;clearTimeout(lpT);document.querySelectorAll('.mday.lp').forEach(x=>x.classList.remove('lp'))};
 ['pointerup','pointercancel','pointerleave','pointermove'].forEach(t=>$('mGrid').addEventListener(t,lpCancel));
 $('mGrid').addEventListener('contextmenu',ev=>ev.preventDefault());
