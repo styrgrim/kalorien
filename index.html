@@ -104,6 +104,7 @@ h2{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01
 .goal-main .sub{font-size:12px;color:var(--muted);font-weight:500}
 .today{background:var(--surface-2);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;text-align:center}
 .today .tl{display:flex;justify-content:center;align-items:baseline;gap:6px;flex-wrap:wrap}
+.tnote{font-size:12.5px;color:var(--muted);margin:10px 0 0;line-height:1.4;text-align:center}.tnote b{color:var(--fg)}
 .today .tl b{font-family:var(--display);font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
 .today .bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
 .today .bar i{display:block;height:100%;border-radius:4px}
@@ -848,17 +849,19 @@ function renderGoal(){
   const burnT=live?Math.max(td0.rest||0,s.baseRest)+Math.max(td0.active||0,s.baseActive)*f:tb,eat=Math.round((burnT-def)/10)*10;
   $('gTitle').textContent='Heute · '+['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][new Date().getDay()]+', '+ddmm(ti);
   $('gTempo').textContent='Plan Ø '+fmt(s.dailyTarget)+' kcal/Tag · ≈ −'+fmt1(s.dailyTarget*7/s.kcalPerKg)+' kg/Woche';
-  $('gEat').textContent=fmt(eat);$('gEatSub').textContent='bei '+fmt(burnT)+' kcal Verbrauch'+(more?' · +'+fmt((td0.active-s.baseActive)*f)+' durch Bewegung':'');
+  $('gEat').textContent=fmt(eat);$('gEatSub').textContent=more?'inkl. '+fmt(td0.active)+' kcal Bewegung (+'+fmt((td0.active-s.baseActive)*f)+')':(s.useWatch?'inkl. Ø '+fmt(s.baseActive)+' kcal Bewegung':'bei '+fmt(burnT)+' kcal Verbrauch');
   $('gProt').textContent=pt?fmt(pt.goal):'–';$('gProtSub').textContent=pt?'mindestens '+fmt(pt.min)+' g':'';
   $('gDef').textContent=fmt(def)+' kcal Defizit heute';
   const td=state.today;
   if(td&&td.date===ti&&(td.eaten>0||td.active>0)){const left=eat-td.eaten,pct=Math.min(100,td.eaten/eat*100);const pp=pt&&td.protein?Math.min(100,td.protein/pt.goal*100):0;
+    const openA=s.useWatch?Math.max(0,s.baseActive-(td.active||0)):0;
+    const actNote=openA>=30?`<p class="tnote">Eingeplant sind ${fmt(s.baseActive)} kcal Bewegung, bisher ${fmt(td.active||0)}. Noch <b>${fmt(openA)} kcal aktiv</b> offen. Schaffst du die nicht, darfst du heute rund ${fmt(Math.round(openA*f/10)*10)} kcal weniger essen.</p>`:'';
     const tm=new Date(td.at).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
     $('gToday').innerHTML=`<p class="label">Heute bisher · Stand ${tm}</p>
     <div class="tl"><b>${fmt(Math.abs(left))}</b><span>kcal ${left>=0?'übrig':'drüber'}</span></div>
     <div class="bar"><i style="width:${pct}%;background:${left>=0?'var(--good)':'var(--bad)'}"></i></div>
     <span class="tsub">${fmt(td.eaten)} von ${fmt(eat)} kcal gegessen${td.active?` · ${fmt(td.active)} kcal aktiv`:''}</span>
-    ${pt?`<div class="bar"><i style="width:${pp}%;background:var(--accent)"></i></div><span class="tsub">${fmt(td.protein||0)} von ${fmt(pt.goal)} g Protein</span>`:''}`;$('gToday').hidden=false}
+    ${pt?`<div class="bar"><i style="width:${pp}%;background:var(--accent)"></i></div><span class="tsub">${fmt(td.protein||0)} von ${fmt(pt.goal)} g Protein</span>`:''}${actNote}`;$('gToday').hidden=false}
   else $('gToday').hidden=true;
   if(t.rem>0&&s.dailyTarget>0){const d=new Date(Date.now()+Math.ceil(t.rem/s.dailyTarget)*864e5);$('gEnd').textContent='Ziel erreicht am '+d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'})}else $('gEnd').textContent=t.rem===0?'Ziel erreicht':'';
   const last=sorted().filter(e=>e.eaten>0).at(-1);
