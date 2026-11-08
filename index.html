@@ -413,8 +413,8 @@ code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;backgro
     <div class="mleg">
       <span><i class="r-better"></i>≥ 100 mehr</span><span><i class="r-ok"></i>im Ziel ±100</span><span><i class="r-worse"></i>100–250 zu wenig</span><span><i class="r-bad"></i>250–500 zu wenig</span><span><i class="r-surplus"></i>&gt; 500 zu wenig</span>
     </div>
-    <div class="mleg">
-      <span>Protein-Punkt:</span><span><i class="dt" style="background:var(--good)"></i>≥ 1,8 g/kg</span><span><i class="dt" style="background:var(--okc)"></i>1,6</span><span><i class="dt" style="background:var(--warn)"></i>1,2</span><span><i class="dt" style="background:var(--orange)"></i>0,8</span><span><i class="dt" style="background:var(--bad)"></i>darunter</span>
+    <div class="mleg" id="protLegW">
+      <span id="protLeg"></span>
     </div>
     <p class="hint" style="text-align:center;margin:6px 0 0">Zahl im Tag = Defizit (grau = geplant). Lange drücken: Tag zählt / zählt nicht.</p>
     </div>
@@ -799,7 +799,8 @@ function rateDay(e){const d=deficit(e);if(d==null)return null;const diff=d-planF
 const RATE_TXT={better:'besser als Ziel',ok:'im Ziel',worse:'knapp unter Ziel',bad:'unter Ziel',surplus:'deutlich unter Ziel'};
 const RATE_COL={better:'var(--good)',ok:'var(--okc)',worse:'var(--warn)',bad:'var(--orange)',surplus:'var(--bad)'};
 /* Protein in g pro kg: Ziel (Einstellung, 1,8) · 1,6 untere Grenze der Empfehlung im Defizit · 1,2 Minimum · 0,8 allgemeiner Grundbedarf */
-function rateProt(g){const w=currentWeight();if(!g||!w)return null;const r=g/w,goal=state.settings.protPerKg;if(r>=goal-0.04)return 'better';if(r>=1.6)return 'ok';if(r>=PROT_MIN)return 'worse';if(r>=0.8)return 'bad';return 'surplus'}
+/* Protein in Gramm, gleiche Grenzen wie angezeigt: Ziel grün, Mitte hellgrün, ab Minimum gelb, unter Minimum rot */
+function rateProt(g){const pt=protTargets();if(!g||!pt)return null;if(g>=pt.goal)return 'better';if(g>=Math.round((pt.goal+pt.min)/2/5)*5)return 'ok';if(g>=pt.min)return 'worse';return 'surplus'}
 const pillR=(r,txt)=>`<span class="pill r-${r}">${txt}</span>`;
 const isoOf=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 function renderMonth(){
@@ -822,12 +823,13 @@ function renderMonth(){
     const planned=!r&&dt>=now;
     const cls=['mday',r?'r-'+r:'',pre?'pre':'',planned?'plan':'',+dt===+now?'today':'',pr?'pend':'',dt>now?'future':''].join(' ');
     let small='';if(df!=null)small=(df>=0?'':'+')+fmt(Math.abs(df));else if(planned)small=fmt(planFor(iso));
-    let dot='';const prr=view?rateProt(view.protein):null;if(prr)dot=`<i class="pdot" style="background:${RATE_COL[prr]}"></i>`;
+    let dot='';const prr=view&&!view.live?rateProt(view.protein):null;if(prr)dot=`<i class="pdot" style="background:${RATE_COL[prr]}"></i>`;
     const rowEnd=(off+d)%7===0||d===days,selRow=mSel&&mSel.slice(0,7)===iso.slice(0,7)&&Math.floor((off+(+mSel.slice(8))-1)/7)===Math.floor((off+d-1)/7);
     h+=`<button type="button" class="${cls}" data-d="${iso}" aria-pressed="${mSel===iso}" aria-label="${d}. ${r?RATE_TXT[r]:planned?'Ziel '+planFor(iso)+' kcal':'keine Daten'}">${dot}<b>${d}</b><small>${small}</small></button>`;
     if(rowEnd&&selRow)h+='<div class="mdetail inrow" id="mDetail"></div>';
   }
   $('mGrid').innerHTML=h;
+  {const p=protTargets(),mid=p?Math.round((p.goal+p.min)/2/5)*5:0;$('protLegW').innerHTML=p?`<span>Protein-Punkt:</span><span><i class="dt" style="background:var(--good)"></i>≥ ${fmt(p.goal)} g</span><span><i class="dt" style="background:var(--okc)"></i>≥ ${fmt(mid)} g</span><span><i class="dt" style="background:var(--warn)"></i>≥ ${fmt(p.min)} g (Minimum)</span><span><i class="dt" style="background:var(--bad)"></i>darunter</span>`:''}
   $('mSum').textContent=nD?`${nD} ${nD===1?'Tag':'Tage'} erfasst · Ø Defizit ${fmt(sumD/nD)} kcal · gesamt ≈ ${fmt1(sumD/state.settings.kcalPerKg)} kg · ${miss?miss+'× unter Ziel':'kein Tag unter Ziel'}`:'Tippe einen Tag an, um sein Ziel zu ändern.';
   renderDetail();
 }
@@ -884,7 +886,7 @@ function renderGoal(){
   if(t.rem>0&&s.dailyTarget>0){const d=new Date(Date.now()+Math.ceil(t.rem/s.dailyTarget)*864e5);$('gEnd').textContent='Ziel erreicht am '+d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'})}else $('gEnd').textContent=t.rem===0?'Ziel erreicht':'';
   const last=dwSel?(state.entries.find(e=>e.date===dwSel)||{date:dwSel}):sorted().filter(e=>e.eaten>0).at(-1);
   if(last){const pl=planFor(last.date),ad=deficit(last),off=!countsDate(last.date),r=off?null:rateDay(last);
-    const pr=off?null:rateProt(last.protein),pg=last.protein>0?`${fmt(last.protein)} g Protein · ${fmt1(last.protein/(last.weight||currentWeight()))} g/kg`:'';
+    const pr=off||last.live?null:rateProt(last.protein),pg=last.protein>0?`${fmt(last.protein)} g Protein · ${fmt1(last.protein/(last.weight||currentWeight()))} g/kg`:'';
     $('gLast').innerHTML=`<span>${dwSel?'<b>':''}${weekday(last.date)} ${ddmm(last.date)}${dwSel?'</b>':''}:</span>`
       +(ad!=null?(r?pillR(r,`Defizit ${fmt(ad)} (Ziel ${fmt(pl)})`):`<span class="pill none">Defizit ${fmt(ad)}${off?' · zählt nicht':''}</span>`):'<span class="pill none">kein Essen erfasst</span>')
       +(pg?(pr?pillR(pr,pg):`<span class="pill none">${pg}</span>`):'')
