@@ -1162,11 +1162,12 @@ function renderWiz(){
   const pick=(id,cb)=>{const g=$(id);if(!g)return;g.onclick=e=>{const b=e.target.closest('button');if(!b)return;g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));cb&&cb(b.dataset.v)}};
   if(step==='profile'){const upd=()=>{const b=bmrOf(document.querySelector('#wSex [aria-pressed="true"]').dataset.v,wizVal('wAge'),wizVal('wH'),wizVal('wW'));$('wBmr').textContent=b?`Grundumsatz ca. ${fmt(b)} kcal pro Tag`:'Bitte alle drei Felder ausfüllen.'};
     pick('wSex',upd);['wAge','wH','wW'].forEach(id=>$(id).addEventListener('input',upd));upd()}
-  if(step==='watch')pick('wWatch',v=>{s.hasWatch=v==='1';s.useWatch=s.hasWatch;lsSet();renderWiz()});
-  if(step==='activity'){const upd=v=>{const e=estimateBase(s.sex,s.age,s.height,s.startWeight,+v);$('wEst').textContent=e?`Geschätzter Verbrauch ca. ${fmt(e.total)} kcal pro Tag`:''};pick('wPal',upd);const sel=$('wPal').querySelector('[aria-pressed="true"]');if(sel)upd(sel.dataset.v)}
+  const auto=()=>setTimeout(()=>{if(WIZ[wizI]===step)wizAdvance()},280);
+  if(step==='watch')pick('wWatch',v=>{s.hasWatch=v==='1';s.useWatch=s.hasWatch;lsSet();auto()});
+  if(step==='activity'){const upd=v=>{const e=estimateBase(s.sex,s.age,s.height,s.startWeight,+v);$('wEst').textContent=e?`Geschätzter Verbrauch ca. ${fmt(e.total)} kcal pro Tag`:''};pick('wPal',v=>{upd(v);auto()});const sel=$('wPal').querySelector('[aria-pressed="true"]');if(sel)upd(sel.dataset.v)}
   if(step==='goal'){const upd=()=>{const g=wizVal('wGoal');s.goalWeight=g>0?g:null;s.dailyTarget=+$('wDef').value;$('wDefV').textContent=fmt(s.dailyTarget);$('wCalc').innerHTML=wizTilesHTML()};
     $('wGoal').addEventListener('input',upd);$('wDef').addEventListener('input',upd)}
-  if(step==='apps'){pick('wYaz',v=>{s.qYazio=v});pick('wScale',v=>{s.qScale=v})}
+  if(step==='apps'){const both=()=>{if(s.qYazio&&s.qScale)auto()};pick('wYaz',v=>{s.qYazio=v;both()});pick('wScale',v=>{s.qScale=v;both()})}
 }
 function wizErr(msg){let n=$('wizBody').querySelector('.wiz-err');if(!n){n=document.createElement('p');n.className='note wiz-err';n.style.color='var(--bad)';$('wizBody').querySelector('.ctr').append(n)}n.textContent=msg}
 function wizCommitStep(){
@@ -1191,8 +1192,9 @@ $('wizNext').addEventListener('click',()=>{
     if(wizGot){let e=state.entries.find(x=>x.date===wizGot.date);if(!e){e={date:wizGot.date};state.entries.push(e)}Object.assign(e,wizGot);pending=null;$('pending').hidden=true;$('sendBtn').disabled=true}
     try{history.replaceState(null,'',location.pathname)}catch(e){}
     closeWiz();commit(wizGot?'Eingerichtet und ersten Tag übernommen':'Eingerichtet');window.scrollTo(0,0);return}
-  if(wizCommitStep()!==true)return;WIZ=wizSteps();wizI=Math.min(wizI+1,WIZ.length-1);renderWiz();
+  wizAdvance();
 });
+function wizAdvance(){if(wizCommitStep()!==true)return;WIZ=wizSteps();wizI=Math.min(wizI+1,WIZ.length-1);renderWiz()}
 $('wizBack').addEventListener('click',()=>{if(wizI>0){wizI--;renderWiz()}});
 
 /* ---------- Daten aus den Kurzbefehlen (#hx=…) ----------
