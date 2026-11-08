@@ -768,7 +768,7 @@ function chartForecast(){
   if(hasProj)lg.push(item('var(--accent)','Dein Kurs',`(Ø ${fmt(t.rate)} kcal/Tag)`,`${labY(endProj)} · ${dist(endProj)}`));
   if(hasPlan)lg.push(item('var(--muted)','Plan',`(${fmt(s.dailyTarget)} kcal/Tag)`,`${labY(endPlan)} · ${dist(endPlan)}`));
   if(hasProj&&hasPlan){const diff=Math.round((endPlan-endProj)/864e5),w=Math.abs(diff)/7;
-    const txt=Math.abs(diff)<4?'Kurs und Plan liegen gleichauf.':`Dein Kurs ist ${w<8?Math.round(w)+' Wochen':fmt1(Math.abs(diff)/30.44).replace(',0','')+' Monate'} ${diff>0?'schneller':'langsamer'} als der Plan.`;
+    const txt=Math.abs(diff)<4?'Kurs und Plan liegen gleichauf.':`Dein Kurs ist ${w<8?Math.round(w)+(Math.round(w)===1?' Woche':' Wochen'):fmt1(Math.abs(diff)/30.44).replace(',0','')+' Monate'} ${diff>0?'schneller':'langsamer'} als der Plan.`;
     lg.push(`<span class="lg-note" style="color:${diff>=-3?'var(--good)':'var(--bad)'}">${txt}</span>`)}
   $('legend').innerHTML=lg.join('');
   const x=v=>c.L+(v-day0)/(tMax-day0)*(c.W-c.L-c.R),y=v=>c.T+(t.total-v)/t.total*(c.H-c.T-c.B);
@@ -800,6 +800,14 @@ function chartForecast(){
     c.mk('text',{x:Math.min(px,c.W-c.R),y:y(0)+(close?32:18),'text-anchor':anchor(px),style:'fill:var(--fg);font-weight:700'},'Plan '+lab(endPlan))}
   if(hasProj){const px=x(endProj);c.mk('circle',{cx:px,cy:y(0),r:4.5,fill:'var(--surface)',stroke:'var(--accent)','stroke-width':2});
     c.mk('text',{x:Math.min(px,c.W-c.R),y:y(0)+18,'text-anchor':anchor(px),style:'fill:var(--accent);font-weight:700'},'Kurs '+lab(endProj))}
+  /* Meilensteine zum Monatswechsel: erwartetes Gewicht auf deinem Kurs */
+  const sw=startWeightOf(),wAt=r=>sw?fmt1(sw-(t.total-r)/s.kcalPerKg)+' kg':'−'+fmt1((t.total-r)/s.kcalPerKg)+' kg';
+  const remAt=tm=>{if(tm<=last[0]){let p0=pts[0];for(const p of pts){if(p[0]>=tm){const f=(tm-p0[0])/((p[0]-p0[0])||1);return p0[1]+(p[1]-p0[1])*f}p0=p}return last[1]}
+    return hasProj?Math.max(0,last[1]-(tm-last[0])/864e5*t.rate):null};
+  let prevX=-99;months.slice(1).forEach(m=>{const tm=m.getTime(),stop=hasProj?endProj:last[0];if(tm<=day0||tm>=stop-4*864e5)return;const r=remAt(tm);if(r==null)return;
+    const mx=x(tm),my=y(r);if(mx-prevX<54)return;prevX=mx;
+    c.mk('circle',{cx:mx,cy:my,r:4,fill:tm<=last[0]?'var(--accent)':'var(--surface)',stroke:'var(--accent)','stroke-width':2});
+    c.mk('text',{x:mx+7,y:my-8,'text-anchor':'start',style:'fill:var(--fg);font-weight:700;font-size:11px'},wAt(r))});
 }
 
 /* ---------- Monatskalender ---------- */
