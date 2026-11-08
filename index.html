@@ -81,7 +81,7 @@ h2{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01
 .seg button{font:inherit;font-size:13px;font-weight:600;border:0;background:none;color:var(--muted);padding:6px 12px;border-radius:9px;cursor:pointer}
 .seg button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .seg button:focus-visible{outline:2px solid var(--accent)}
-.chart{width:100%;display:block}
+.chart{width:100%;display:block}#chartDW{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .chart text{font-family:var(--body);font-size:11px;fill:var(--muted);font-variant-numeric:tabular-nums}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
 .legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
@@ -663,6 +663,7 @@ function setLegend(items){$('legend').innerHTML=items.map(([c,t,dash])=>`<span><
 
 function renderChart(){chartForecast()}
 let dwN=14;try{dwN=+localStorage.getItem('kc-dw')||14}catch(e){}
+let dwSel=null;
 function chartDW(){
   const c=chartCtx('chartDW');c.T=14;c.B=24;c.L=40;c.R=40;
   const all=sorted(),lastD=all.length?parseISO(all.at(-1).date):new Date();
@@ -675,6 +676,7 @@ function chartDW(){
   const y=v=>c.T+(hi-v)/(hi-lo)*(c.H-c.T-c.B);
   yAxis(c,lo,hi,y,v=>Math.abs(v)>=1000?fmt1(v/1000).replace(',0','')+'k':fmt(v));
   const slot=(c.W-c.L-c.R)/N,bw=Math.min(N<=7?28:18,slot*.6);
+  c.svg._dw={L:c.L,slot,days,W:c.W};const si=days.indexOf(dwSel);if(si>=0)c.mk('rect',{x:c.L+slot*si+1,y:c.T-6,width:slot-2,height:c.H-c.T-c.B+6,rx:8,fill:'var(--accent-soft)'});
   days.forEach((d,i)=>{const cx=c.L+slot*(i+.5),v=defs[i];
     if(v!=null){const r=rateDay(by[d]);c.mk('rect',{x:cx-bw/2,y:Math.min(y(0),y(v)),width:bw,height:Math.max(2,Math.abs(y(v)-y(0))),rx:Math.min(5,bw/3),fill:RATE_COL[r]||'var(--good)'})}
     c.mk('line',{x1:cx-slot*.4,x2:cx+slot*.4,y1:y(plans[i]),y2:y(plans[i]),stroke:'var(--accent)','stroke-width':2,'stroke-linecap':'round'});
@@ -872,12 +874,15 @@ function renderGoal(){
     ${pt?`<div class="bar"><i style="width:${pp}%;background:var(--accent)"></i></div><span class="tsub">${fmt(td.protein||0)} von ${fmt(pt.goal)} g Protein</span>`:''}${actNote}`;$('gToday').hidden=false}
   else $('gToday').hidden=true;
   if(t.rem>0&&s.dailyTarget>0){const d=new Date(Date.now()+Math.ceil(t.rem/s.dailyTarget)*864e5);$('gEnd').textContent='Ziel erreicht am '+d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'})}else $('gEnd').textContent=t.rem===0?'Ziel erreicht':'';
-  const last=sorted().filter(e=>e.eaten>0).at(-1);
-  if(last){const pl=planFor(last.date),ad=deficit(last),r=rateDay(last);
-    const pr=rateProt(last.protein);
-    $('gLast').innerHTML=`<span>${weekday(last.date)} ${ddmm(last.date)}:</span>`+pillR(r,`Defizit ${fmt(ad)} (Ziel ${fmt(pl)})`)+(pr?pillR(pr,`${fmt(last.protein)} g Protein · ${fmt1(last.protein/currentWeight()).replace(',',',')} g/kg`):'');
+  const last=dwSel?(state.entries.find(e=>e.date===dwSel)||{date:dwSel}):sorted().filter(e=>e.eaten>0).at(-1);
+  if(last){const pl=planFor(last.date),ad=deficit(last),off=!countsDate(last.date),r=off?null:rateDay(last);
+    const pr=off?null:rateProt(last.protein),pg=last.protein>0?`${fmt(last.protein)} g Protein · ${fmt1(last.protein/(last.weight||currentWeight()))} g/kg`:'';
+    $('gLast').innerHTML=`<span>${dwSel?'<b>':''}${weekday(last.date)} ${ddmm(last.date)}${dwSel?'</b>':''}:</span>`
+      +(ad!=null?(r?pillR(r,`Defizit ${fmt(ad)} (Ziel ${fmt(pl)})`):`<span class="pill none">Defizit ${fmt(ad)}${off?' · zählt nicht':''}</span>`):'<span class="pill none">kein Essen erfasst</span>')
+      +(pg?(pr?pillR(pr,pg):`<span class="pill none">${pg}</span>`):'')
+      +(dwSel&&last.weight>0?`<span class="pill none">${fmt1(last.weight)} kg</span>`:'');
   }else $('gLast').innerHTML='';
-  $('gHint').textContent=`Verbrauch = ${fmt(s.baseRest)} Ruhe + ${s.activePct} % von ${fmt(s.baseActive)} aktiv. Protein-Ziel ${String(s.protPerKg).replace('.',',')} g/kg, Minimum ${String(PROT_MIN).replace('.',',')} g/kg.`+(def>1000?' Mehr als 1.000 kcal Defizit ist auf Dauer schwer durchzuhalten.':'');
+  $('gHint').innerHTML=`Verbrauch = ${fmt(s.baseRest)} Ruhe + ${s.activePct} % von ${fmt(s.baseActive)} aktiv.<br>Protein-Ziel ${String(s.protPerKg).replace('.',',')} g/kg, Minimum ${String(PROT_MIN).replace('.',',')} g/kg.`+(def>1000?' Mehr als 1.000 kcal Defizit ist auf Dauer schwer durchzuhalten.':'');
   chartDW();
 }
 /* ---------- Abgleich mit der Waage ---------- */
@@ -1112,6 +1117,8 @@ const lpCancel=ev=>{if(ev&&ev.type==='pointermove'&&lpXY&&Math.hypot(ev.clientX-
 $('mGrid').addEventListener('contextmenu',ev=>ev.preventDefault());
 $('mGrid').addEventListener('click',e=>{if(lpFired){lpFired=false;return}const b=e.target.closest('button[data-d]');if(!b||b.disabled)return;mSel=mSel===b.dataset.d?null:b.dataset.d;renderMonth()});
 $('mPrev').addEventListener('click',()=>{mView.m--;if(mView.m<0){mView.m=11;mView.y--}mSel=null;renderMonth()});
+$('chartDW').addEventListener('click',ev=>{const sv=$('chartDW'),m=sv._dw;if(!m)return;const r=sv.getBoundingClientRect(),x=(ev.clientX-r.left)/r.width*m.W,i=Math.floor((x-m.L)/m.slot);
+  if(i<0||i>=m.days.length)return;const d=m.days[i];dwSel=dwSel===d||d===todayISO2()&&!dwSel?null:d;renderGoal()});
 $('mInfo').addEventListener('click',()=>{const l=$('mLegend'),o=l.hidden;l.hidden=!o;$('mInfo').setAttribute('aria-expanded',o)});
 $('mNext').addEventListener('click',()=>{mView.m++;if(mView.m>11){mView.m=0;mView.y++}mSel=null;renderMonth()});
 document.querySelectorAll('.dw-seg button').forEach(b=>b.addEventListener('click',()=>{dwN=+b.dataset.n;try{localStorage.setItem('kc-dw',dwN)}catch(e){}chartDW()}));
