@@ -138,25 +138,26 @@ select.in{appearance:none;-webkit-appearance:none}
 .btnrow .btn-ghost{display:inline-flex;align-items:center;justify-content:center}
 .linkbtn.danger{color:var(--bad)}
 .foot{font-size:11px;color:var(--muted);text-align:center;margin:0}
-.wiz{position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top,0px) + 20px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 20px) max(16px,env(safe-area-inset-left,0px))}
-.wiz-in{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:18px;min-height:100%}
-.wiz-dots{display:flex;justify-content:center;gap:6px}
+.wiz{position:fixed;inset:0;z-index:50;background:var(--surface);display:flex;flex-direction:column;height:100dvh;overflow:hidden;padding:calc(env(safe-area-inset-top,0px) + 14px) max(18px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 14px) max(18px,env(safe-area-inset-left,0px))}
+.wiz-in{width:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:12px;flex:1;min-height:0}
+.wiz-dots{display:flex;justify-content:center;gap:6px;flex:none;padding-top:4px}
 .wiz-dots i{width:8px;height:8px;border-radius:4px;background:var(--line);transition:width .2s}
 .wiz-dots i.on{width:22px;background:var(--accent)}
 .wiz-dots i.done{background:color-mix(in srgb,var(--accent) 45%,var(--line))}
-.wiz-body{background:var(--surface);border-radius:22px;padding:22px 18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;text-align:center}
-.wiz-body h1{font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:-.02em;line-height:1.1;margin:0;text-wrap:balance}
+.wiz-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:14px;text-align:center;padding:4px 2px}
+.wiz-body>.ctr{margin:auto 0;display:flex;flex-direction:column;gap:14px}
+.wiz-body h1{font-family:var(--display);font-weight:800;font-size:clamp(24px,7vw,30px);letter-spacing:-.02em;line-height:1.1;margin:0;text-wrap:balance}
 .wiz-body .lead{color:var(--muted);margin:0;font-size:15px}
 .wiz-body .ico{width:56px;height:56px;border-radius:16px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin:0 auto}
 .wiz-body .ico svg{width:28px;height:28px}
 .wiz-body label.f{text-align:left}
-.wiz-nav{display:grid;grid-template-columns:1fr 2fr;gap:10px}
+.wiz-nav{display:grid;grid-template-columns:1fr 2fr;gap:10px;flex:none}
 .wiz-nav .btn-sm{font-size:16px;padding:14px}
 .wiz-nav .btn-ghost{padding:13px}
 .wiz-nav #wizBack[hidden]+#wizNext{grid-column:1/-1}
 .calc p b{font-size:inherit;font-family:inherit;line-height:inherit;color:var(--fg)}
 .reqs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;text-align:left}
-.reqs li{background:var(--surface-2);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:start;font-size:14px}
+.reqs li{background:var(--surface-2);border-radius:12px;padding:9px 12px;display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:start;font-size:14px}
 .reqs li b{display:block}
 .reqs li span{color:var(--muted);font-size:13px}
 .reqs .tick{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--accent-soft);color:var(--accent)}
@@ -173,13 +174,24 @@ select.in{appearance:none;-webkit-appearance:none}
 .calc b{font-family:var(--display);font-weight:800;font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
 .calc span{font-size:12px;color:var(--muted)}
 .calc p{grid-column:1/-1;margin:0;font-size:13px;color:var(--muted)}
-.calc4{background:var(--accent-soft);border-radius:16px;padding:14px 8px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
-.calc4 div{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0}
-.calc4 b{font-family:var(--display);font-weight:800;font-size:clamp(17px,5vw,22px);line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap}
-.calc4 span{font-size:11px;color:var(--muted);line-height:1.25;margin-top:2px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{background:var(--accent-soft);border-radius:14px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.tile .label{color:var(--accent);font-size:10.5px}
+.tile b{font-family:var(--display);font-weight:800;font-size:clamp(20px,6vw,26px);line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tile b small{font-size:13px;font-weight:600;color:var(--muted);margin-left:3px}
+.yn{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.yn button{font:inherit;font-weight:700;font-size:17px;border:1.5px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:16px;padding:18px 10px;cursor:pointer}
+.yn button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.yn button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.qrow{display:flex;flex-direction:column;gap:8px;text-align:center}
+.qrow>b{font-size:15px}
+.seg3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg3 button{font:inherit;font-size:13px;font-weight:600;border:1.5px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:12px;padding:10px 4px;cursor:pointer}
+.seg3 button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .goal-in{display:flex;justify-content:center}
 .center-f{align-items:center;text-align:center!important;width:min(220px,100%)}
-.in.big{font-size:28px;font-weight:700;text-align:center;font-family:var(--display);padding:10px}
+.in.big::-webkit-inner-spin-button,.in.big::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.in.big{-moz-appearance:textfield;font-size:28px;font-weight:700;text-align:center;font-family:var(--display);padding:10px}
 .slider{display:flex;flex-direction:column;align-items:center;gap:4px}
 .slider .sv{font-family:var(--display);font-weight:800;font-size:30px;font-variant-numeric:tabular-nums}
 .slider input{width:100%;accent-color:var(--accent);margin:4px 0}
@@ -496,7 +508,7 @@ code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;backgro
 </div>
 
 <script>
-const DEFAULT={settings:{goalKg:10,kcalPerKg:7000,tdee:2500,dailyTarget:500,useWatch:true,activePct:80,startWeight:null,goalWeight:null,baseRest:1900,baseActive:600,protPerKg:1.8,weekPlan:null,dayPlan:null,sex:'m',age:null,height:null,pal:1.55,ownValues:false,onboarded:false,v:3},entries:[]};
+const DEFAULT={settings:{goalKg:10,kcalPerKg:7000,tdee:2500,dailyTarget:500,useWatch:true,activePct:80,startWeight:null,goalWeight:null,baseRest:1900,baseActive:600,protPerKg:1.8,weekPlan:null,dayPlan:null,sex:'m',age:null,height:null,pal:1.55,ownValues:false,onboarded:false,hasWatch:null,qYazio:null,qScale:null,needYazio:false,needScale:false,v:3},entries:[]};
 /* iCloud-Links der beiden Kurzbefehle (leer = noch nicht freigegeben) */
 const SHORTCUT_DAILY='';
 const SHORTCUT_HISTORY='';
@@ -1040,7 +1052,6 @@ $('wiApply').addEventListener('click',()=>{weekPlan().fill(wiRate);state.setting
 
 
 /* ---------- Einrichtung (Assistent) ---------- */
-const WIZ=['welcome','profile','activity','goal','apps','daily','home','done'];
 let wizI=0,wizGot=null,wizHist=null;
 const ICO={
   flag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg>',
@@ -1050,117 +1061,108 @@ const ICO={
   link:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
   sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
   home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+  watch:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="3"/><path d="M9 6l1-3h4l1 3M9 18l1 3h4l1-3"/></svg>',
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>'
 };
 const CHK='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>';
-function wizStepSaved(){try{return Math.max(0,Math.min(WIZ.length-1,+localStorage.getItem('kc-wiz')||0))}catch(e){return 0}}
-function openWiz(i){wizI=i||0;$('wiz').hidden=false;document.body.style.overflow='hidden';renderWiz()}
+/* Schritte hängen von den Antworten ab */
+function wizSteps(){const s=state.settings,st=['welcome','profile','watch'];st.push(s.hasWatch?'history':'activity');st.push('goal','apps');if(s.needYazio||s.needScale)st.push('appsHow');st.push('daily','home','done');return st}
+let WIZ=wizSteps();
+function wizStepSaved(){WIZ=wizSteps();try{const n=localStorage.getItem('kc-wiz');return n&&WIZ.includes(n)?WIZ.indexOf(n):0}catch(e){return 0}}
+function openWiz(i){WIZ=wizSteps();wizI=Math.max(0,Math.min(WIZ.length-1,i||0));$('wiz').hidden=false;document.body.style.overflow='hidden';renderWiz()}
 function closeWiz(){$('wiz').hidden=true;document.body.style.overflow='';try{localStorage.removeItem('kc-wiz')}catch(e){}}
 function wizVal(id){const el=$(id);return el?parseFloat(String(el.value).replace(',','.')):NaN}
 function scBtn(url,label){return url?`<a class="bigbtn" href="${url}" target="_blank" rel="noopener">${label}</a>`:`<div class="waiting">Der Link zum Kurzbefehl folgt in Kürze.</div>`}
-function wizCalcHTML(){
+function wizTilesHTML(){
   const s=state.settings,tb=typicalBurn(),def=s.dailyTarget||500,w=s.startWeight,eat=Math.round((tb-def)/10)*10;
   const kg=s.goalWeight&&w?w-s.goalWeight:null,days=kg>0?kg*s.kcalPerKg/def:null;
   const end=days?new Date(Date.now()+Math.ceil(days)*864e5).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'}):'–';
   const prot=w?Math.round(w*s.protPerKg/5)*5:null;
-  return `<div class="calc4"><div><b>${fmt(eat)}</b><span>kcal essen<br>pro Tag</span></div><div><b>${prot?fmt(prot):'–'}</b><span>g Protein<br>pro Tag</span></div>
-  <div><b>−${fmt1(def*7/s.kcalPerKg)}</b><span>kg<br>pro Woche</span></div><div><b>${end}</b><span>Ziel<br>erreicht</span></div></div>
-  <p class="note">bei ca. ${fmt(tb)} kcal Verbrauch pro Tag${kg>0?` · noch ${fmt1(kg)} kg`:''}</p>`;
+  return `<div class="tiles"><div class="tile"><span class="label">Essen pro Tag</span><b>${fmt(eat)}<small>kcal</small></b></div><div class="tile"><span class="label">Protein pro Tag</span><b>${prot?fmt(prot):'–'}<small>g</small></b></div>
+  <div class="tile"><span class="label">Pro Woche</span><b>−${fmt1(def*7/s.kcalPerKg)}<small>kg</small></b></div><div class="tile"><span class="label">Ziel erreicht</span><b>${end}</b></div></div>`;
 }
-function histSummaryHTML(h){return `<div class="waiting ok">${CHK} ${h.days} Tage ausgewertet: Ruheenergie ≈ ${fmt(h.rest)} kcal, aktiv ≈ ${fmt(h.active)} kcal</div>`}
+const head=(ico,t,lead)=>`<div class="ico">${ICO[ico]}</div><h1 id="wizTitle">${t}</h1>${lead?`<p class="lead">${lead}</p>`:''}`;
+const yn=(id,val)=>`<div class="yn" id="${id}"><button type="button" data-v="1" aria-pressed="${val===true}">Ja</button><button type="button" data-v="0" aria-pressed="${val===false}">Nein</button></div>`;
 function renderWiz(){
-  const s=state.settings,step=WIZ[wizI];
-  try{localStorage.setItem('kc-wiz',wizI)}catch(e){}
+  WIZ=wizSteps();const s=state.settings,step=WIZ[wizI];
+  try{localStorage.setItem('kc-wiz',step)}catch(e){}
   $('wizDots').innerHTML=WIZ.map((_,i)=>`<i class="${i===wizI?'on':i<wizI?'done':''}"></i>`).join('');
   $('wizBack').hidden=wizI===0;
-  $('wizNext').textContent=step==='welcome'?'Los geht’s':step==='done'?'Zum Countdown':step==='daily'&&!wizGot?'Später testen':'Weiter';
+  $('wizNext').textContent=step==='welcome'?'Los geht’s':step==='done'?'Zum Countdown':(step==='daily'&&!wizGot)||(step==='history'&&!wizHist&&!s.histDays)?'Später':'Weiter';
   let h='';
-  if(step==='welcome')h=`<div class="ico">${ICO.flag}</div><h1 id="wizTitle">Dein Kalorien-Countdown</h1>
-    <p class="lead">Du siehst jeden Tag, wie viele Kalorien dir bis zu deinem Zielgewicht noch fehlen. Die Werte kommen automatisch aus Apple Health.</p>
-    <p class="label">Das brauchst du</p>
+  if(step==='welcome')h=head('flag','Dein Kalorien-Countdown','Du siehst jeden Tag, wie viele Kalorien dir bis zu deinem Zielgewicht noch fehlen. Die Werte kommen automatisch aus Apple Health.')+`
     <ul class="reqs">
-      <li><i class="tick">✓</i><div><b>iPhone</b><span>Diese Seite in Safari öffnen</span></div></li>
-      <li><i class="tick">✓</i><div><b>Apple Watch</b><span>Jedes Modell</span></div></li>
-      <li><i class="tick">✓</i><div><b>Yazio</b><span>Oder eine andere Kalorien-App</span></div></li>
-      <li><i class="tick opt">+</i><div><b>Renpho-Waage</b><span>Optional, oder eine andere smarte Waage</span></div></li>
-    </ul>
-    <p class="note">Deine Daten bleiben auf deinem iPhone. Kein Konto, keine Kosten. Dauer: ca. 5 Minuten.</p>`;
-  if(step==='profile')h=`<div class="ico">${ICO.user}</div><h1 id="wizTitle">Über dich</h1><p class="lead">Daraus berechnen wir deinen Grundumsatz.</p>
+      <li><i class="tick">✓</i><div><b>iPhone</b></div></li>
+      <li><i class="tick">✓</i><div><b>Yazio</b><span>oder eine andere Kalorien-App</span></div></li>
+      <li><i class="tick opt">+</i><div><b>Apple Watch</b><span>empfohlen, jedes Modell</span></div></li>
+      <li><i class="tick opt">+</i><div><b>Smarte Waage</b><span>empfohlen, z. B. Renpho</span></div></li>
+    </ul><p class="note">Kein Konto, keine Kosten. Deine Daten bleiben auf deinem iPhone. Dauer: ca. 5 Minuten.</p>`;
+  if(step==='profile')h=head('user','Über dich','Daraus berechnen wir deinen Grundumsatz.')+`
     <div class="choice two" id="wSex"><button type="button" data-v="m" aria-pressed="${s.sex!=='f'}">Mann</button><button type="button" data-v="f" aria-pressed="${s.sex==='f'}">Frau</button></div>
     <div class="row3"><label class="f" for="wAge">Alter<input class="in" id="wAge" type="number" inputmode="numeric" min="14" max="99" value="${s.age??''}"></label>
     <label class="f" for="wH">Größe (cm)<input class="in" id="wH" type="number" inputmode="numeric" min="120" max="230" value="${s.height??''}"></label>
     <label class="f" for="wW">Gewicht (kg)<input class="in" id="wW" type="number" inputmode="decimal" step="0.1" value="${s.startWeight??''}"></label></div>
     <p class="note" id="wBmr"></p>`;
+  if(step==='watch')h=head('watch','Apple Watch','Hast du deine Apple Watch in den letzten 30 Tagen regelmäßig getragen?')+yn('wWatch',s.hasWatch)+`
+    <p class="note" id="wWatchNote">${s.hasWatch===true?'Super. Im nächsten Schritt übertragen wir deinen Verlauf. Trag die Watch auch künftig täglich, dann rechnet der Countdown mit deinem echten Verbrauch.':s.hasWatch===false?'Kein Problem. Der Countdown rechnet dann mit einem geschätzten Verbrauch aus deinem Aktivitätslevel.':'Für einen genauen Countdown trägst du die Watch tagsüber durchgehend.'}</p>`;
+  if(step==='history'){const hist=wizHist||(s.ownValues&&s.histDays?{days:s.histDays,rest:s.baseRest,active:s.baseActive}:null);
+    h=head('bolt','Verlauf übertragen','Einmalig: Kurzbefehl 1 liest deine Watch-Daten der letzten Monate und schickt sie hierher.')+`
+    <ol class="steps-l"><li>Kurzbefehl laden und <b>hinzufügen</b>. Bei der Frage nach der Quelle <b>deine Apple Watch</b> wählen.</li><li>Einmal <b>starten</b> und den Health-Zugriff erlauben. Danach öffnet sich diese Seite wieder.</li></ol>
+    ${scBtn(SHORTCUT_HISTORY,'Kurzbefehl 1 laden')}
+    ${hist?`<div class="waiting ok">${CHK} ${hist.days} Tage ausgewertet: Ruhe ≈ ${fmt(hist.rest)} kcal, aktiv ≈ ${fmt(hist.active)} kcal</div>`:'<p class="note">Ohne Übertragung schätzen wir deinen Verbrauch vorerst.</p>'}`}
   if(step==='activity'){const opts=[[1.4,'Wenig aktiv','Bürojob, unter 6.000 Schritte'],[1.55,'Mäßig aktiv','6.000–10.000 Schritte'],[1.7,'Aktiv','über 10.000 Schritte oder 3× Sport pro Woche'],[1.85,'Sehr aktiv','körperliche Arbeit oder fast täglich Sport']];
-    const hist=wizHist||(s.ownValues&&s.histDays?{days:s.histDays,rest:s.baseRest,active:s.baseActive}:null);
-    h=`<div class="ico">${ICO.bolt}</div><h1 id="wizTitle">Dein Verbrauch</h1><p class="lead">Am genauesten wird es mit den Daten deiner Apple Watch der letzten Monate.</p>
-    <div class="box"><p class="label">Empfohlen · einmalig</p><b>Kurzbefehl 1: Verlauf übertragen</b>
-      <ol class="steps-l"><li>Kurzbefehl laden und hinzufügen. Bei der Frage nach der Quelle <b>deine Apple Watch</b> wählen.</li><li>Einmal starten und den Health-Zugriff erlauben. Danach öffnet sich diese Seite wieder.</li></ol>
-      ${scBtn(SHORTCUT_HISTORY,'Kurzbefehl 1 laden')}
-      ${hist?histSummaryHTML(hist):''}</div>
-    <p class="label">${hist?'Fertig. Oder ohne Watch-Verlauf:':'Ohne Watch-Verlauf: Wie aktiv bist du?'}</p>
-    <div class="choice" id="wPal">${opts.map(([v,t,d])=>`<button type="button" data-v="${v}" aria-pressed="${!hist&&!s.ownValues&&Math.abs((s.pal||0)-v)<.01}"><b>${t}</b><span>${d}</span></button>`).join('')}</div>
+    h=head('bolt','Wie aktiv bist du?','Daraus schätzen wir deinen täglichen Verbrauch.')+`
+    <div class="choice" id="wPal">${opts.map(([v,t,d])=>`<button type="button" data-v="${v}" aria-pressed="${Math.abs((s.pal||0)-v)<.01}"><b>${t}</b><span>${d}</span></button>`).join('')}</div>
     <p class="note" id="wEst"></p>`}
-  if(step==='goal')h=`<div class="ico">${ICO.target}</div><h1 id="wizTitle">Dein Ziel</h1>
-    <div class="goal-in"><label class="f center-f" for="wGoal">Zielgewicht in kg<input class="in big" id="wGoal" type="number" inputmode="decimal" step="0.1" value="${s.goalWeight??''}" placeholder="z. B. ${s.startWeight?Math.round(s.startWeight-5):70}"></label></div>
+  if(step==='goal')h=head('target','Dein Ziel')+`
+    <div class="goal-in"><label class="f center-f" for="wGoal">Zielgewicht in kg<input class="in big" id="wGoal" type="number" inputmode="decimal" step="0.1" value="${s.goalWeight??''}" placeholder="${s.startWeight?Math.round(s.startWeight-5):70}"></label></div>
     <div class="slider"><p class="label">Defizit pro Tag</p><b class="sv"><span id="wDefV">${fmt(s.dailyTarget||500)}</span> kcal</b>
       <input type="range" id="wDef" min="250" max="1250" step="50" value="${s.dailyTarget||500}" aria-label="Defizit pro Tag"><div class="wi-scale"><span>sanft</span><span>sportlich</span></div></div>
-    <div id="wCalc">${wizCalcHTML()}</div>
-    <p class="note">Tipp: 500 kcal pro Tag halten die meisten gut durch.</p>`;
-  if(step==='apps')h=`<div class="ico">${ICO.link}</div><h1 id="wizTitle">Apps verbinden</h1><p class="lead">Damit Essen und Gewicht in Apple Health landen.</p>
-    <div class="appcard"><b>Yazio</b><ol class="steps-l"><li>Yazio öffnen → <b>Profil</b> (unten rechts)</li><li>Oben rechts <b>Zahnrad</b> → <b>Apple Health</b></li><li>Alles <b>einschalten</b> und erlauben</li></ol></div>
-    <div class="appcard"><b>Renpho</b><ol class="steps-l"><li>Renpho öffnen → <b>Ich</b> (unten rechts)</li><li><b>Integrationen</b> → <b>Apple Health</b></li><li>Verbinden und <b>Gewicht</b> erlauben</li></ol></div>
-    <div class="appcard"><b>Apple Watch</b><p class="note">Nichts zu tun, die Watch schreibt automatisch in Health.</p></div>
-    <p class="note">Andere App? In deren Einstellungen „Apple Health“ suchen und einschalten.</p>`;
-  if(step==='daily')h=`<div class="ico">${ICO.sun}</div><h1 id="wizTitle">Kurzbefehl 2: Tageswerte</h1><p class="lead">Schickt jeden Morgen die Werte von gestern an den Countdown.</p>
-    <ol class="steps-l">
-      <li>Kurzbefehl laden und hinzufügen. Bei der Frage nach der Quelle <b>deine Apple Watch</b> wählen.</li>
-      <li>Einmal starten und den Health-Zugriff erlauben.</li>
-    </ol>
+    <div id="wCalc">${wizTilesHTML()}</div>`;
+  if(step==='apps')h=head('link','Apple Health','Sind deine Apps schon mit Apple Health verbunden?')+`
+    <div class="qrow"><b>Yazio schreibt in Health</b><div class="seg3" id="wYaz">${['ja','nein','unsicher'].map(v=>`<button type="button" data-v="${v}" aria-pressed="${s.qYazio===v}">${v==='ja'?'Ja':v==='nein'?'Nein':'Weiß nicht'}</button>`).join('')}</div></div>
+    <div class="qrow"><b>Waage schreibt in Health</b><div class="seg3" id="wScale">${['ja','nein','keine'].map(v=>`<button type="button" data-v="${v}" aria-pressed="${s.qScale===v}">${v==='ja'?'Ja':v==='nein'?'Nein':'Keine Waage'}</button>`).join('')}</div></div>
+    <p class="note">${s.hasWatch?'Die Apple Watch schreibt automatisch in Health.':''}</p>`;
+  if(step==='appsHow')h=head('link','Kurz verbinden','So landen deine Werte in Apple Health:')+
+    (s.needYazio?`<div class="appcard"><b>Yazio</b><ol class="steps-l"><li>Yazio → <b>Profil</b> → <b>Zahnrad</b></li><li><b>Apple Health</b> → alles einschalten</li></ol></div>`:'')+
+    (s.needScale?`<div class="appcard"><b>Renpho</b><ol class="steps-l"><li>Renpho → <b>Ich</b> → <b>Integrationen</b></li><li><b>Apple Health</b> → Gewicht erlauben</li></ol></div>`:'')+
+    `<p class="note">Andere App? In den Einstellungen „Apple Health“ suchen und einschalten.</p>`;
+  if(step==='daily')h=head('sun','Kurzbefehl 2: Tageswerte','Schickt jeden Morgen die Werte von gestern an den Countdown.')+`
+    <ol class="steps-l"><li>Laden und <b>hinzufügen</b>.${s.hasWatch?' Als Quelle <b>deine Apple Watch</b> wählen.':''}</li><li>Einmal <b>starten</b> und Health-Zugriff erlauben.</li></ol>
     ${scBtn(SHORTCUT_DAILY,'Kurzbefehl 2 laden')}
-    <div class="waiting ${wizGot?'ok':''}" id="wWait">${wizGot?`${CHK} Daten vom ${weekday(wizGot.date)} ${ddmm(wizGot.date)} empfangen`:'<i class="spin"></i> Warte auf den ersten Start …'}</div>
-    <p class="note">Täglich: morgens wiegen, Kurzbefehl antippen, „Senden“.<br>Für immer ohne Antippen: Kurzbefehle → Automation → „Uhrzeit“ → z. B. 8:00 Uhr → Kurzbefehl 2.</p>`;
-  if(step==='home')h=`<div class="ico">${ICO.home}</div><h1 id="wizTitle">Countdown aufs Home-Bildschirm</h1><p class="lead">Damit du jederzeit reinschauen kannst.</p>
-    <ol class="steps-l">
-      <li>Unten in Safari auf <b>Teilen</b> tippen</li>
-      <li><b>Zum Home-Bildschirm</b> wählen</li>
-      <li>Gibt es den Schalter <b>„Als Web-App öffnen“</b>: <b>ausschalten</b></li>
-      <li><b>Hinzufügen</b></li>
-    </ol>
-    <p class="note">Der Schalter muss aus sein, damit der Countdown dieselben Daten sieht wie der Kurzbefehl.</p>`;
-  if(step==='done')h=`<div class="ico">${ICO.check}</div><h1 id="wizTitle">Alles bereit</h1>${wizCalcHTML()}
-    <ul class="reqs"><li><i class="tick">1</i><div><b>Morgens wiegen</b><span>Die Waage schickt das Gewicht an Health</span></div></li>
-    <li><i class="tick">2</i><div><b>Kurzbefehl 2 → „Senden“</b><span>Gestern wird abgerechnet</span></div></li>
-    <li><i class="tick">3</i><div><b>Nach 3 Wochen</b><span>Der Abgleich mit der Waage verfeinert deine Werte</span></div></li></ul>`;
-  $('wizBody').innerHTML=h;
-  if(step==='profile'){
-    const upd=()=>{const b=bmrOf(document.querySelector('#wSex [aria-pressed="true"]').dataset.v,wizVal('wAge'),wizVal('wH'),wizVal('wW'));$('wBmr').textContent=b?`Grundumsatz ca. ${fmt(b)} kcal pro Tag`:'Bitte alle drei Felder ausfüllen.'};
-    $('wSex').onclick=e=>{const b=e.target.closest('button');if(!b)return;$('wSex').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));upd()};
-    ['wAge','wH','wW'].forEach(id=>$(id).addEventListener('input',upd));upd();
-  }
-  if(step==='activity'){
-    const upd=()=>{const sel=$('wPal').querySelector('[aria-pressed="true"]');
-      if(sel){const e=estimateBase(s.sex,s.age,s.height,s.startWeight,+sel.dataset.v);$('wEst').textContent=e?`Geschätzter Verbrauch ca. ${fmt(e.total)} kcal pro Tag`:''}else $('wEst').textContent=''};
-    $('wPal').onclick=e=>{const b=e.target.closest('button');if(!b)return;const on=b.getAttribute('aria-pressed')==='true';$('wPal').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',!on&&x===b));upd()};upd();
-  }
-  if(step==='goal'){
-    const upd=()=>{const g=wizVal('wGoal');s.goalWeight=g>0?g:null;s.dailyTarget=+$('wDef').value;$('wDefV').textContent=fmt(s.dailyTarget);$('wCalc').innerHTML=wizCalcHTML()};
-    $('wGoal').addEventListener('input',upd);$('wDef').addEventListener('input',upd);
-  }
+    <div class="waiting ${wizGot?'ok':''}">${wizGot?`${CHK} Daten vom ${weekday(wizGot.date)} ${ddmm(wizGot.date)} empfangen`:'<i class="spin"></i> Warte auf den ersten Start …'}</div>
+    <p class="note">Täglich: morgens wiegen, Kurzbefehl 2 antippen, „Senden“.</p>`;
+  if(step==='home')h=head('home','Aufs Home-Bildschirm','Damit du jederzeit reinschauen kannst.')+`
+    <ol class="steps-l"><li>Im Browser auf <b>Teilen</b> tippen</li><li><b>Zum Home-Bildschirm</b> wählen</li><li>Schalter <b>„Als Web-App öffnen“</b> (falls da): <b>aus</b></li><li><b>Hinzufügen</b></li></ol>
+    <p class="note">Nutze dafür deinen Standard-Browser (Safari oder Chrome). Kurzbefehle öffnen Links immer dort, und nur so sehen Icon und Kurzbefehl dieselben Daten.</p>`;
+  if(step==='done')h=head('check','Alles bereit')+wizTilesHTML()+`
+    <ul class="reqs"><li><i class="tick">1</i><div><b>Morgens wiegen</b></div></li><li><i class="tick">2</i><div><b>Kurzbefehl 2 antippen → „Senden“</b></div></li><li><i class="tick">3</i><div><b>Nach 3 Wochen</b><span>verfeinert der Abgleich mit der Waage deine Werte</span></div></li></ul>`;
+  $('wizBody').innerHTML=`<div class="ctr">${h}</div>`;$('wizBody').scrollTop=0;
+  const pick=(id,cb)=>{const g=$(id);if(!g)return;g.onclick=e=>{const b=e.target.closest('button');if(!b)return;g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));cb&&cb(b.dataset.v)}};
+  if(step==='profile'){const upd=()=>{const b=bmrOf(document.querySelector('#wSex [aria-pressed="true"]').dataset.v,wizVal('wAge'),wizVal('wH'),wizVal('wW'));$('wBmr').textContent=b?`Grundumsatz ca. ${fmt(b)} kcal pro Tag`:'Bitte alle drei Felder ausfüllen.'};
+    pick('wSex',upd);['wAge','wH','wW'].forEach(id=>$(id).addEventListener('input',upd));upd()}
+  if(step==='watch')pick('wWatch',v=>{s.hasWatch=v==='1';s.useWatch=s.hasWatch;lsSet();renderWiz()});
+  if(step==='activity'){const upd=v=>{const e=estimateBase(s.sex,s.age,s.height,s.startWeight,+v);$('wEst').textContent=e?`Geschätzter Verbrauch ca. ${fmt(e.total)} kcal pro Tag`:''};pick('wPal',upd);const sel=$('wPal').querySelector('[aria-pressed="true"]');if(sel)upd(sel.dataset.v)}
+  if(step==='goal'){const upd=()=>{const g=wizVal('wGoal');s.goalWeight=g>0?g:null;s.dailyTarget=+$('wDef').value;$('wDefV').textContent=fmt(s.dailyTarget);$('wCalc').innerHTML=wizTilesHTML()};
+    $('wGoal').addEventListener('input',upd);$('wDef').addEventListener('input',upd)}
+  if(step==='apps'){pick('wYaz',v=>{s.qYazio=v});pick('wScale',v=>{s.qScale=v})}
 }
-function wizErr(msg){let n=$('wizBody').querySelector('.wiz-err');if(!n){n=document.createElement('p');n.className='note wiz-err';n.style.color='var(--bad)';$('wizBody').append(n)}n.textContent=msg}
+function wizErr(msg){let n=$('wizBody').querySelector('.wiz-err');if(!n){n=document.createElement('p');n.className='note wiz-err';n.style.color='var(--bad)';$('wizBody').querySelector('.ctr').append(n)}n.textContent=msg}
 function wizCommitStep(){
   const s=state.settings,step=WIZ[wizI];
   if(step==='profile'){const a=wizVal('wAge'),h=wizVal('wH'),w=wizVal('wW');
     if(!(a>=14&&a<=99))return wizErr('Bitte ein Alter zwischen 14 und 99 eingeben.');
     if(!(h>=120&&h<=230))return wizErr('Bitte die Größe in cm eingeben, z. B. 178.');
     if(!(w>=30&&w<=300))return wizErr('Bitte dein aktuelles Gewicht in kg eingeben.');
-    s.sex=document.querySelector('#wSex [aria-pressed="true"]').dataset.v;s.age=a;s.height=h;s.startWeight=Math.round(w*10)/10;}
-  if(step==='activity'){const sel=$('wPal').querySelector('[aria-pressed="true"]');
-    if(sel){const e=estimateBase(s.sex,s.age,s.height,s.startWeight,+sel.dataset.v);s.ownValues=false;s.pal=+sel.dataset.v;if(e){s.baseRest=e.rest;s.baseActive=e.active}}
-    else if(!(wizHist||(s.ownValues&&s.histDays)))return wizErr('Bitte den Verlauf übertragen oder eine Aktivitätsstufe wählen.');}
+    s.sex=document.querySelector('#wSex [aria-pressed="true"]').dataset.v;s.age=a;s.height=h;s.startWeight=Math.round(w*10)/10;
+    if(!s.ownValues){const e=estimateBase(s.sex,a,h,s.startWeight,s.pal||1.55);if(e){s.baseRest=e.rest;s.baseActive=e.active}}}
+  if(step==='watch'&&s.hasWatch==null)return wizErr('Bitte Ja oder Nein wählen.');
+  if(step==='history'&&!(wizHist||s.histDays)){const e=estimateBase(s.sex,s.age,s.height,s.startWeight,s.pal||1.55);s.ownValues=false;if(e){s.baseRest=e.rest;s.baseActive=e.active}}
+  if(step==='activity'){const sel=$('wPal').querySelector('[aria-pressed="true"]');if(!sel)return wizErr('Bitte eine Stufe wählen.');
+    const e=estimateBase(s.sex,s.age,s.height,s.startWeight,+sel.dataset.v);s.ownValues=false;s.pal=+sel.dataset.v;s.useWatch=false;if(e){s.baseRest=e.rest;s.baseActive=e.active}}
   if(step==='goal'){const g=wizVal('wGoal');if(!(g>0))return wizErr('Bitte ein Zielgewicht eingeben.');if(g>=s.startWeight)return wizErr('Das Zielgewicht muss unter deinem aktuellen Gewicht liegen.');
     s.goalWeight=g;s.goalKg=Math.max(.5,Math.round((s.startWeight-g)*10)/10);s.dailyTarget=+$('wDef').value;weekPlan().fill(s.dailyTarget);s.dayPlan={}}
+  if(step==='apps'){if(!s.qYazio||!s.qScale)return wizErr('Bitte beide Fragen beantworten.');s.needYazio=s.qYazio!=='ja';s.needScale=s.qScale==='nein'}
   lsSet();return true;
 }
 $('wizNext').addEventListener('click',()=>{
@@ -1168,9 +1170,9 @@ $('wizNext').addEventListener('click',()=>{
     if(wizGot){let e=state.entries.find(x=>x.date===wizGot.date);if(!e){e={date:wizGot.date};state.entries.push(e)}Object.assign(e,wizGot);pending=null;$('pending').hidden=true;$('sendBtn').disabled=true}
     try{history.replaceState(null,'',location.pathname)}catch(e){}
     closeWiz();commit(wizGot?'Eingerichtet und ersten Tag übernommen':'Eingerichtet');window.scrollTo(0,0);return}
-  if(wizCommitStep()!==true)return;wizI++;renderWiz();$('wiz').scrollTop=0;
+  if(wizCommitStep()!==true)return;WIZ=wizSteps();wizI=Math.min(wizI+1,WIZ.length-1);renderWiz();
 });
-$('wizBack').addEventListener('click',()=>{if(wizI>0){wizI--;renderWiz();$('wiz').scrollTop=0}});
+$('wizBack').addEventListener('click',()=>{if(wizI>0){wizI--;renderWiz()}});
 
 /* ---------- Verlauf aus Kurzbefehl 1 (#hx=…) ---------- */
 function parseHistory(txt){
@@ -1195,7 +1197,7 @@ function checkHistHash(){if(!/^#hx=/.test(location.hash))return false;let txt=''
   const h=parseHistory(txt);try{history.replaceState(null,'',location.pathname)}catch(e){}
   if(!h){status('Der Verlauf konnte nicht gelesen werden. Wurde beim Kurzbefehl deine Apple Watch gewählt?');return true}
   applyHistory(h);wizHist=h;
-  if(!state.settings.onboarded){openWiz(WIZ.indexOf('activity'))}
+  if(!state.settings.onboarded){state.settings.hasWatch=true;WIZ=wizSteps();openWiz(WIZ.indexOf('history'))}
   else{render();status(`Verlauf übernommen: Ruheenergie ${fmt(h.rest)} kcal, aktiv ${fmt(h.active)} kcal`)}
   return true}
 
@@ -1229,7 +1231,7 @@ $('reEstimate').addEventListener('click',()=>{const s=state.settings,sex=$('sSex
   render();
   if(/^#import=/.test(location.hash)){offerImport(location.hash.slice(8));return}
   if(checkHistHash())return;
-  if(!state.settings.onboarded){checkHash();openWiz(wizGot?WIZ.indexOf('daily'):wizStepSaved());return}
+  if(!state.settings.onboarded){checkHash();openWiz(wizGot?wizSteps().indexOf('daily'):wizStepSaved());return}
   checkHash();
   if(!storageOk)status('Hinweis: Dein Browser erlaubt kein Speichern. Öffne die Seite in Safari, nicht im privaten Modus.');
 })();
