@@ -1239,7 +1239,9 @@ function importSections(sec){
     days++;
   }
   const t=n-1;state.today={date:dateOf(t),eaten:Math.round(at('e',t)),protein:Math.round(at('p',t)),active:Math.round(at('a',t)),rest:Math.round(at('r',t)),steps:Math.round(at('s',t)),at:Date.now()};
-  let base=null;if(n>=30&&sec.a&&sec.r){base=baseFromLists((sec.a||[]).slice(1,-1),(sec.r||[]).slice(1,-1),(sec.s||[]).slice(1,-1));
+  let base=null;if(n>=30&&sec.a&&!(sec.r||[]).some(v=>v>500)){const A=(sec.a||[]).slice(1,-1),S=(sec.s||[]).slice(1,-1);const v=A.filter((x,i)=>x>=100&&(S[i]==null||S[i]>=1500)).slice(-60).sort((x,y)=>x-y);
+    if(v.length>=14){const s=state.settings;s.baseActive=Math.round(v[Math.floor(v.length/2)]/10)*10;s.hasWatch=true;s.useWatch=true;s.histDays=v.length}}
+  if(n>=30&&sec.a&&sec.r){base=baseFromLists((sec.a||[]).slice(1,-1),(sec.r||[]).slice(1,-1),(sec.s||[]).slice(1,-1));
     if(base){const s=state.settings;s.baseRest=base.rest;s.baseActive=base.active;s.ownValues=true;s.histDays=base.days;s.hasWatch=true;s.useWatch=true}}
   const NAMES={e:'Essen',p:'Protein',a:'Aktive Energie',r:'Ruheenergie',s:'Schritte',w:'Gewicht'};
   const empty=Object.keys(NAMES).filter(k=>!(sec[k]||[]).some(v=>v>0)).filter(k=>state.settings.hasWatch!==false||!['a','r','s'].includes(k)).map(k=>NAMES[k]);
