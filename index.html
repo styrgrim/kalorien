@@ -126,6 +126,7 @@ h2{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01
 .mday .pdot{position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;box-shadow:0 0 0 1.5px var(--surface)}
 .pill.r-better,.pill.r-ok,.pill.r-worse,.pill.r-bad,.pill.r-surplus{font-weight:700}
 .mleg i.dt{border-radius:50%;width:9px;height:9px;vertical-align:0}
+.infobtn{display:flex;margin:10px auto 0;width:32px;height:32px;padding:5px;border:0;border-radius:50%;background:none;color:var(--muted);cursor:pointer}.infobtn svg{width:22px;height:22px}.infobtn[aria-expanded="true"]{color:var(--accent);background:var(--accent-soft)}
 .mday.pre{opacity:.4;filter:grayscale(1)}
 .mday{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;transition:transform .8s}
 .mday.lp{transform:scale(.88)}
@@ -399,11 +400,15 @@ code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;backgro
     </div>
     <div class="mgrid mwd"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
     <div class="mgrid" id="mGrid"></div>
+    <button type="button" class="infobtn" id="mInfo" aria-expanded="false" aria-controls="mLegend" aria-label="Farben erklären"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".9" fill="currentColor" stroke="none"/></svg></button>
+    <div id="mLegend" hidden>
     <div class="mleg">
       <span><i class="r-better"></i>≥ 100 mehr</span><span><i class="r-ok"></i>im Ziel ±100</span><span><i class="r-worse"></i>100–250 zu wenig</span><span><i class="r-bad"></i>250–500 zu wenig</span><span><i class="r-surplus"></i>&gt; 500 zu wenig</span>
     </div>
     <div class="mleg">
       <span>Protein-Punkt:</span><span><i class="dt" style="background:var(--good)"></i>≥ 1,8 g/kg</span><span><i class="dt" style="background:var(--okc)"></i>1,6</span><span><i class="dt" style="background:var(--warn)"></i>1,2</span><span><i class="dt" style="background:var(--orange)"></i>0,8</span><span><i class="dt" style="background:var(--bad)"></i>darunter</span>
+    </div>
+    <p class="hint" style="text-align:center;margin:6px 0 0">Zahl im Tag = Defizit (grau = geplant). Lange drücken: Tag zählt / zählt nicht.</p>
     </div>
     <div class="mdetail" id="mDetail" hidden></div>
     <p class="hint" id="mSum"></p>
@@ -418,7 +423,7 @@ code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;backgro
       </table>
     </div>
     <p class="hint" id="estNote" hidden>* Verbrauch geschätzt mit deinen typischen Werten, weil die Watch an dem Tag nicht durchgehend getragen wurde.</p>
-    <p class="empty" id="emptyTbl" hidden>Noch keine Tage. Starte den Kurzbefehl und tippe auf „Senden“.</p>
+    <p class="empty" id="emptyTbl" hidden>Noch keine Tage. Öffne Winter Arc über Kurzbefehl 2, dann erscheinen sie hier.</p>
   </section>
 
   <section class="card">
@@ -810,7 +815,7 @@ function renderMonth(){
     h+=`<button type="button" class="${cls}" data-d="${iso}" aria-pressed="${mSel===iso}" aria-label="${d}. ${r?RATE_TXT[r]:planned?'Ziel '+planFor(iso)+' kcal':'keine Daten'}">${dot}<b>${d}</b><small>${small}</small></button>`;
   }
   $('mGrid').innerHTML=h;
-  $('mSum').textContent=nD?`${nD} ${nD===1?'Tag':'Tage'} erfasst · Ø Defizit ${fmt(sumD/nD)} kcal · gesamt ≈ ${fmt1(sumD/state.settings.kcalPerKg)} kg · ${miss?miss+'× unter Ziel':'kein Tag unter Ziel'}`:'Graue Zahlen sind geplante Defizite. Tippe einen Tag an, um sein Ziel zu ändern. Lange drücken: Tag zählt / zählt nicht.';
+  $('mSum').textContent=nD?`${nD} ${nD===1?'Tag':'Tage'} erfasst · Ø Defizit ${fmt(sumD/nD)} kcal · gesamt ≈ ${fmt1(sumD/state.settings.kcalPerKg)} kg · ${miss?miss+'× unter Ziel':'kein Tag unter Ziel'}`:'Tippe einen Tag an, um sein Ziel zu ändern.';
   renderDetail();
 }
 function renderDetail(){
@@ -1104,6 +1109,7 @@ const lpCancel=ev=>{if(ev&&ev.type==='pointermove'&&lpXY&&Math.hypot(ev.clientX-
 $('mGrid').addEventListener('contextmenu',ev=>ev.preventDefault());
 $('mGrid').addEventListener('click',e=>{if(lpFired){lpFired=false;return}const b=e.target.closest('button[data-d]');if(!b||b.disabled)return;mSel=mSel===b.dataset.d?null:b.dataset.d;renderMonth()});
 $('mPrev').addEventListener('click',()=>{mView.m--;if(mView.m<0){mView.m=11;mView.y--}mSel=null;renderMonth()});
+$('mInfo').addEventListener('click',()=>{const l=$('mLegend'),o=l.hidden;l.hidden=!o;$('mInfo').setAttribute('aria-expanded',o)});
 $('mNext').addEventListener('click',()=>{mView.m++;if(mView.m>11){mView.m=0;mView.y++}mSel=null;renderMonth()});
 document.querySelectorAll('.dw-seg button').forEach(b=>b.addEventListener('click',()=>{dwN=+b.dataset.n;try{localStorage.setItem('kc-dw',dwN)}catch(e){}chartDW()}));
 $('gDefBtn').addEventListener('click',()=>{const n=new Date();mView={y:n.getFullYear(),m:n.getMonth()};mSel=todayISO2();renderMonth();$('monthCard').scrollIntoView({behavior:'smooth',block:'start'})});
