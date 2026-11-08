@@ -923,7 +923,7 @@ function renderCal(){
   if(!ready){
     $('calPct').textContent='–';
     $('calVerdict').textContent=sp<CAL_DAYS?`Noch ${CAL_DAYS-sp} Tage bis zur ersten Auswertung.`:'Noch zu wenige Messungen für eine Auswertung.';
-    $('calHint').textContent='Täglich morgens wiegen und alles in Yazio tracken. Verglichen werden die Wochenschnitte am Anfang und am Ende, damit Wasserschwankungen nicht stören.';
+    $('calHint').textContent='Täglich morgens wiegen und alles in Yazio tracken.';
     return;
   }
   const pct=c.f==null?null:Math.round(c.f*100/5)*5;
