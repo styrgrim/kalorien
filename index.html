@@ -522,7 +522,7 @@ code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;backgro
 const DEFAULT={settings:{goalKg:10,kcalPerKg:7000,tdee:2500,dailyTarget:500,useWatch:true,activePct:80,startWeight:null,goalWeight:null,baseRest:1900,baseActive:600,protPerKg:1.8,weekPlan:null,dayPlan:null,sex:'m',age:null,height:null,pal:1.55,ownValues:false,onboarded:false,hasWatch:null,qYazio:null,qScale:null,needYazio:false,needScale:false,v:3},entries:[]};
 /* iCloud-Links der beiden Kurzbefehle (leer = noch nicht freigegeben) */
 const SHORTCUT_DAILY='https://www.icloud.com/shortcuts/6f5f047416584a87b14ccaad5c535d9f';
-const SHORTCUT_HISTORY='https://www.icloud.com/shortcuts/398691989daa4c74b6aa9d265536c5d4';
+const SHORTCUT_HISTORY='https://www.icloud.com/shortcuts/973bfa0bd0634f0ca4595cfa9f0d79c1';
 const LS_KEY='kc-v1';
 let state=structuredClone(DEFAULT), pending=null, chartMode='deficit';
 const $=id=>document.getElementById(id);
@@ -1130,7 +1130,7 @@ function renderWiz(){
   if(step==='watch')h=head('watch','Apple Watch','Hast du deine Apple Watch in den letzten 30 Tagen regelmäßig getragen?')+yn('wWatch',s.hasWatch)+`
     <p class="note" id="wWatchNote">${s.hasWatch===true?'Super. Im nächsten Schritt übertragen wir deinen Verlauf. Trag die Watch auch künftig täglich, dann rechnet der Countdown mit deinem echten Verbrauch.':s.hasWatch===false?'Kein Problem. Der Countdown rechnet dann mit einem geschätzten Verbrauch aus deinem Aktivitätslevel.':'Für einen genauen Countdown trägst du die Watch tagsüber durchgehend.'}</p>`;
   if(step==='history'){const hist=wizHist||(s.ownValues&&s.histDays?{days:s.histDays,rest:s.baseRest,active:s.baseActive}:null);
-    h=head('bolt','Kurzbefehl 1: Verlauf','Einmalig: Kurzbefehl 1 holt deine Werte der letzten 5 Monate aus Health und berechnet daraus deinen Verbrauch.')+`
+    h=head('bolt','Kurzbefehl 1: Verlauf','Einmalig: Kurzbefehl 1 holt deine Werte der letzten 60 Tage aus Health und berechnet daraus deinen Verbrauch.')+`
     <ol class="steps-l"><li>Kurzbefehl laden und <b>hinzufügen</b>. Bei der Frage nach der Quelle <b>deine Apple Watch</b> wählen.</li><li>Einmal <b>starten</b> und den Health-Zugriff erlauben. Das dauert bis zu einer Minute. Danach öffnet sich diese Seite von selbst.</li></ol>
     <p class="note">Meldung „große Datenmengen“? Einstellungen → Apps → Kurzbefehle → Erweitert → „Teilen großer Datenmengen erlauben“.</p>
     ${scBtn(SHORTCUT_HISTORY,'Kurzbefehl 1 laden')}
