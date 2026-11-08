@@ -56,6 +56,9 @@ h2{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01
 .ring{width:108px;height:108px;position:relative}
 .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
 .ring .pct{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:22px}
+.sharerow{grid-column:1/-1;display:flex;justify-content:center;margin-top:-4px}
+.sharebtn{font:inherit;font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px;border:0;border-radius:999px;padding:9px 16px;background:var(--hero-track);color:var(--hero-fg);cursor:pointer}.sharebtn svg{width:17px;height:17px}
+.shareimg{width:100%;border-radius:14px;display:block;-webkit-touch-callout:default}
 .kpis{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .kpi{background:color-mix(in srgb,var(--hero-fg) 6%,transparent);border-radius:14px;padding:10px 12px;min-width:0}
 .kpi b{display:block;font-family:var(--display);font-weight:700;font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -365,6 +368,8 @@ code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;backgro
       <div class="kpi"><b id="kAvg">–</b><span>Ø Defizit / Tag</span></div>
       <div class="kpi"><b id="kWeight">–</b><span>Gewicht</span></div>
       <div class="kpi"><b id="kEta">–</b><span>Ziel erreicht ca.</span></div>
+    </div>
+    <div class="sharerow"><button type="button" class="sharebtn" id="shareBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>Fortschritt teilen</button>
     </div>
   </section>
 
@@ -1335,6 +1340,39 @@ function checkHistHash(){if(!/^#hx/.test(location.hash))return false;let raw=loc
   return true}
 
 /* ---------- Dialog ---------- */
+/* ---------- Teilen-Bild ---------- */
+function shareStats(){const s=state.settings,t=totals(),c=t.counted.slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const inT=c.filter(e=>['better','ok'].includes(rateDay(e))).length;let streak=0;for(let i=c.length-1;i>=0;i--){if(['better','ok'].includes(rateDay(c[i])))streak++;else break}
+  const sw=startWeightOf(),cw=currentWeight(),scale=sw&&cw?Math.round((sw-cw)*10)/10:null;
+  const by=Object.fromEntries(state.entries.map(e=>[e.date,e])),week=[];for(let i=6;i>=0;i--){const d=isoOf(new Date(Date.now()-i*864e5)),e=by[d];week.push({d,r:e&&countsDate(d)?rateDay(e):null})}
+  return {days:c.length,inT,streak,scale,calcKg:t.saved/s.kcalPerKg,pct:t.total?Math.min(1,Math.max(0,t.saved/t.total)):0,rem:t.rem,avg:t.avg,eta:t.eta,goalKg:goalKgOf(),week}}
+async function makeShareImage(){try{await document.fonts.ready}catch(e){}
+  const W=1080,H=1350,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d'),st=shareStats();
+  const D='"Bricolage Grotesque","Avenir Next",system-ui,sans-serif',B='Figtree,system-ui,sans-serif';
+  const bg=g.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#0B1222');bg.addColorStop(1,'#1A2547');g.fillStyle=bg;g.fillRect(0,0,W,H);
+  g.globalAlpha=.07;g.fillStyle='#9DB8FF';for(const [x,y,r] of [[900,160,260],[140,1180,320],[1000,1050,120]]){g.beginPath();g.arc(x,y,r,0,7);g.fill()}g.globalAlpha=1;
+  const txt=(t,x,y,font,col,al='left',ls=0)=>{g.font=font;g.fillStyle=col;g.textAlign=al;try{g.letterSpacing=ls+'px'}catch(e){}g.fillText(t,x,y);try{g.letterSpacing='0px'}catch(e){}};
+  const rr=(x,y,w,h,r,col)=>{g.fillStyle=col;g.beginPath();g.roundRect?g.roundRect(x,y,w,h,r):g.rect(x,y,w,h);g.fill()};
+  txt('❄  WINTER ARC',90,130,`700 34px ${B}`,'#9DB8FF','left',6);
+  txt(st.days?`Tag ${st.days}`:'Start',W-90,130,`600 34px ${B}`,'rgba(255,255,255,.6)','right');
+  const big=st.scale!=null&&st.scale>0?st.scale:st.calcKg;const bigT=(big>0?'−':'')+fmt1(Math.abs(big))+' kg';
+  txt(bigT,90,350,`800 190px ${D}`,'#FFFFFF','left',-4);
+  txt(st.scale!=null&&st.scale>0?'auf der Waage seit dem Start':'rechnerisch eingespart',94,462,`500 38px ${B}`,'rgba(255,255,255,.65)');
+  rr(90,515,W-180,26,13,'rgba(255,255,255,.12)');if(st.pct>0)rr(90,515,Math.max(26,(W-180)*st.pct),26,13,'#6E95FF');
+  txt(`${Math.round(st.pct*100)} % geschafft`,90,600,`700 38px ${B}`,'#FFFFFF');
+  txt(`Ziel: −${fmt1(st.goalKg)} kg`,W-90,600,`500 38px ${B}`,'rgba(255,255,255,.65)','right');
+  const tiles=[[st.avg!=null?fmt(st.avg):'–','kcal Ø Defizit / Tag'],[st.days?`${st.inT}/${st.days}`:'–','Tage im Ziel'],[String(st.streak),st.streak===1?'Tag Serie':'Tage Serie'],[st.eta?st.eta.toLocaleDateString('de-DE',{month:'short',year:'numeric'}):'–','Ziel erreicht ca.']];
+  tiles.forEach(([v,l],i)=>{const x=90+(i%2)*((W-180)/2+10),y=670+Math.floor(i/2)*196,w=(W-180)/2-10;rr(x,y,w,180,28,'rgba(255,255,255,.07)');txt(v,x+36,y+95,`800 66px ${D}`,'#FFFFFF');txt(l,x+36,y+145,`500 30px ${B}`,'rgba(255,255,255,.6)')});
+  txt('LETZTE 7 TAGE',90,1125,`700 28px ${B}`,'rgba(255,255,255,.55)','left',4);
+  const COL={better:'#3DD39A',ok:'#2F9E69',worse:'#F2B84B',bad:'#FF964D',surplus:'#FF7A5F'},cw=(W-180-6*18)/7;
+  st.week.forEach((d,i)=>{const x=90+i*(cw+18);rr(x,1150,cw,90,20,d.r?COL[d.r]:'rgba(255,255,255,.08)');txt(WD[parseISO(d.d).getDay()],x+cw/2,1208,`700 30px ${B}`,d.r?'#0B1222':'rgba(255,255,255,.4)','center')});
+  txt(`${fmt(st.rem)} kcal to go`,90,1305,`600 30px ${B}`,'rgba(255,255,255,.5)');
+  txt(new Date().toLocaleDateString('de-DE'),W-90,1305,`500 30px ${B}`,'rgba(255,255,255,.4)','right');
+  return new Promise(r=>cv.toBlob(r,'image/png'))}
+$('shareBtn').addEventListener('click',async()=>{const blob=await makeShareImage();if(!blob)return;const url=URL.createObjectURL(blob),file=new File([blob],'winter-arc.png',{type:'image/png'});
+  const canShare=navigator.canShare&&navigator.canShare({files:[file]});
+  ask(`<img class="shareimg" src="${url}" alt="Dein Fortschritt als Bild"><p class="hint" style="text-align:center;margin:10px 0 0">${canShare?'Oder lange aufs Bild drücken zum Kopieren.':'Lange aufs Bild drücken zum Kopieren oder Sichern.'}</p>`,canShare?'Teilen':'Sichern',()=>{
+    if(canShare)navigator.share({files:[file]}).catch(()=>{});else{const a=document.createElement('a');a.href=url;a.download='winter-arc.png';document.body.append(a);a.click();a.remove()}},'Schließen')});
 function ask(html,yes,onYes,no='Abbrechen'){$('modalBody').innerHTML=html;$('modalYes').textContent=yes;$('modalNo').textContent=no;$('modal').hidden=false;
   $('modalYes').onclick=()=>{$('modal').hidden=true;onYes()};$('modalNo').onclick=()=>{$('modal').hidden=true}}
 
