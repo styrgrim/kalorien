@@ -885,8 +885,10 @@ function calib(){
   const midT=l=>l.reduce((a,e)=>a+parseISO(e.date).getTime(),0)/l.length;
   const t0=midT(startMid),t1=midT(endMid);
   const days=all.filter(e=>{const tt=parseISO(e.date).getTime();return !e.live&&tt>=t0&&tt<t1});
-  const eatDays=days.filter(e=>e.eaten>0);
+  const eatDays=days.filter(e=>e.eaten>0&&countsDate(e.date));
   let sumDef=0,sumRestMinusEat=0,sumAct=0;
+  /* Ausgeschaltete Tage: Gewicht zählt weiter, Essen gilt als typischer Tag nach Plan */
+  for(const e of days.filter(x=>!countsDate(x.date))){const p=planFor(e.date),eat=typicalBurn()-p;sumDef+=p;sumRestMinusEat+=s.baseRest-eat;sumAct+=s.baseActive}
   for(const e of eatDays){sumDef+=deficit(e);const est=isEstimated(e);const r=est?s.baseRest:e.rest,a=est?Math.max(e.active||0,s.baseActive):(e.active||0);if(e.burn>0){sumRestMinusEat+=e.burn-e.eaten}else{sumRestMinusEat+=r-e.eaten;sumAct+=a}}
   const realKg=startW-endW,predKg=sumDef/k;
   const f=sumAct>0?(realKg*k-sumRestMinusEat)/sumAct:null;
