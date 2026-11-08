@@ -613,7 +613,11 @@ function bmrOf(sex,age,h,w){if(!(age>0&&h>0&&w>0))return null;return 10*w+6.25*h
 function estimateBase(sex,age,h,w,pal){const b=bmrOf(sex,age,h,w);if(!b)return null;const rest=Math.round(b*1.1/10)*10,total=b*pal;return {bmr:Math.round(b),rest,active:Math.max(0,Math.round((total-rest)/0.8/10)*10),total:Math.round(total)}}
 
 /* ---------- Render ---------- */
+/* Vergangene Tage behalten ihr damaliges Ziel, auch wenn der Wochenplan später geändert wird */
+function freezePast(){const f=firstCountDate();if(!f||!state.settings.onboarded)return;const dp=dayPlans(),ti=todayISO2();let d=parseISO(f),n=0;
+  while(n++<800){const iso=isoOf(d);if(iso>=ti)break;if(dp[iso]==null)dp[iso]=weekPlan()[wIdx(d)];d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1)}}
 function render(){
+  freezePast();
   const s=state.settings,t=totals();
   $('heroLabel').textContent=t.rem===0?'Ziel erreicht':`Noch einzusparen bis ${goalWeightOf()?fmt1(goalWeightOf())+' kg':'−'+fmt1(goalKgOf())+' kg'}`;
   $('remaining').textContent=fmt(t.rem);
@@ -748,7 +752,12 @@ function chartForecast(){
   let rem=t.total;const pts=[[day0,rem]];
   for(const e of data){rem=Math.max(0,rem-deficit(e));pts.push([parseISO(e.date).getTime(),rem])}
   const last=pts.at(-1),hasProj=t.rate>0&&last[1]>0,endProj=hasProj?last[0]+last[1]/t.rate*864e5:last[0];
-  const hasPlan=s.dailyTarget>0,endPlan=hasPlan?day0+t.total/s.dailyTarget*864e5:last[0];
+  const hasPlan=s.dailyTarget>0;let endPlan=last[0];const planPts=[[day0,t.total]];
+  if(hasPlan){let r=t.total,d=new Date(day0+864e5),n=0;const ti=todayISO2();
+    while(r>0&&n++<1500){const iso=isoOf(d),p=(iso<ti&&!countsDate(iso))?0:planFor(iso);if(p>0){const nr=Math.max(0,r-p);
+        if(nr===0){endPlan=d.getTime()-864e5+r/p*864e5;planPts.push([endPlan,0])}else planPts.push([d.getTime(),nr]);r=nr}else planPts.push([d.getTime(),r]);
+      d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1)}
+    if(r>0)endPlan=planPts.at(-1)[0]}
   const now=new Date();now.setHours(0,0,0,0);const today=now.getTime();
   const tMax=Math.max(endProj,endPlan,last[0]+7*864e5,today+14*864e5);
   const lab=v=>new Date(v).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'});
@@ -779,7 +788,7 @@ function chartForecast(){
   c.mk('line',{x1:tx,x2:tx,y1:c.T-6,y2:c.H-c.B,stroke:'var(--fg)','stroke-width':1.5,'stroke-dasharray':'2 3'});
   c.mk('text',{x:tx,y:c.T-10,'text-anchor':tx<c.L+30?'start':'middle',style:'fill:var(--fg);font-weight:700'},'Heute');
   /* Linien */
-  if(hasPlan)c.mk('line',{x1:x(day0),y1:y(t.total),x2:x(endPlan),y2:y(0),stroke:'var(--muted)','stroke-width':1.5,'stroke-dasharray':'3 5'});
+  if(hasPlan)c.mk('path',{d:planPts.map((p,i)=>(i?'L':'M')+x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1)).join(' '),fill:'none',stroke:'var(--muted)','stroke-width':1.5,'stroke-dasharray':'3 5','stroke-linejoin':'round'});
   if(hasProj)c.mk('line',{x1:x(last[0]),y1:y(last[1]),x2:x(endProj),y2:y(0),stroke:'var(--accent)','stroke-width':2,'stroke-dasharray':'6 5'});
   const d=pts.map((p,i)=>(i?'L':'M')+x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1)).join(' ');
   c.mk('path',{d,fill:'none',stroke:'var(--accent)','stroke-width':3,'stroke-linejoin':'round','stroke-linecap':'round'});
