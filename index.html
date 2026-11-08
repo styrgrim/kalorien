@@ -914,9 +914,10 @@ function calib(){
   if(W.length<2)return {n:W.length,span:0};
   const first=W[0].date,lastD=W.at(-1).date;
   const span=Math.round((parseISO(lastD)-parseISO(first))/864e5);
-  const avgW=(from,dir)=>{const base=parseISO(from).getTime();const l=W.filter(e=>{const dd=(parseISO(e.date)-base)/864e5;return dir>0?dd>=0&&dd<7:dd<=0&&dd>-7});return l.reduce((a,e)=>a+e.weight,0)/l.length};
+  const win=Math.max(1,Math.min(7,Math.floor(span/3)+1));/* Mittelungsfenster wächst mit der Dauer, max. eine Woche */
+  const avgW=(from,dir)=>{const base=parseISO(from).getTime();const l=W.filter(e=>{const dd=(parseISO(e.date)-base)/864e5;return dir>0?dd>=0&&dd<win:dd<=0&&dd>-win});return l.reduce((a,e)=>a+e.weight,0)/l.length};
   const startW=avgW(first,1),endW=avgW(lastD,-1);
-  const startMid=W.filter(e=>(parseISO(e.date)-parseISO(first))/864e5<7),endMid=W.filter(e=>(parseISO(lastD)-parseISO(e.date))/864e5<7);
+  const startMid=W.filter(e=>(parseISO(e.date)-parseISO(first))/864e5<win),endMid=W.filter(e=>(parseISO(lastD)-parseISO(e.date))/864e5<win);
   const midT=l=>l.reduce((a,e)=>a+parseISO(e.date).getTime(),0)/l.length;
   const t0=midT(startMid),t1=midT(endMid);
   const days=all.filter(e=>{const tt=parseISO(e.date).getTime();return !e.live&&tt>=t0&&tt<t1});
@@ -941,7 +942,8 @@ function renderCal(){
   calSuggest=null;$('calApply').hidden=true;
   if(!ready){
     $('calPct').textContent='–';
-    $('calVerdict').textContent=sp<CAL_DAYS?`Noch ${CAL_DAYS-sp} Tage bis zur ersten Auswertung.`:'Noch zu wenige Messungen für eine Auswertung.';
+    const early=sp>0&&c.realKg!=null?` Bisher: Waage ${sg(c.realKg)}, rechnerisch ${sg(c.predKg)}. In den ersten Tagen schwankt die Waage durch Wasser noch stark.`:'';
+    $('calVerdict').textContent=(sp<CAL_DAYS?`Noch ${CAL_DAYS-sp} Tage bis zur ersten Auswertung.`:'Noch zu wenige Messungen für eine Auswertung.')+early;
     $('calHint').textContent='Täglich morgens wiegen und alles in Yazio tracken.';
     return;
   }
