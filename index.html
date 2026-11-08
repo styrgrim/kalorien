@@ -1072,7 +1072,7 @@ $('wiApply').addEventListener('click',()=>{weekPlan().fill(wiRate);state.setting
 
 
 /* ---------- Einrichtung (Assistent) ---------- */
-let wizI=0,wizGot=null,wizHist=null;
+let wizI=0,wizGot=null,wizHist=null,wizRecv=null;
 const ICO={
   flag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg>',
   user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
@@ -1130,7 +1130,7 @@ function renderWiz(){
     <ol class="steps-l"><li>Kurzbefehl laden und <b>hinzufügen</b>. Bei der Frage nach der Quelle <b>deine Apple Watch</b> wählen.</li><li>Einmal <b>starten</b> und den Health-Zugriff erlauben. Das dauert bis zu einer Minute. Danach öffnet sich diese Seite von selbst.</li></ol>
     <p class="note">Meldung „große Datenmengen“? Einstellungen → Apps → Kurzbefehle → Erweitert → „Teilen großer Datenmengen erlauben“.</p>
     ${scBtn(SHORTCUT_HISTORY,'Kurzbefehl 1 laden')}
-    ${hist?`<div class="waiting ok">${CHK} Verlauf da: Ruhe ≈ ${fmt(hist.rest)} kcal, aktiv ≈ ${fmt(hist.active)} kcal pro Tag</div>`:'<p class="note">Ohne Übertragung schätzen wir deinen Verbrauch vorerst.</p>'}`}
+    ${hist?`<div class="waiting ok">${CHK} Verlauf da: Ruhe ≈ ${fmt(hist.rest)} kcal, aktiv ≈ ${fmt(hist.active)} kcal pro Tag</div>`:wizRecv?`<div class="waiting">Daten empfangen (${wizRecv.n} Tage), aber zu wenig Ruhe- oder Aktivenergie für eine Auswertung. Kam das von Kurzbefehl 1 mit 150 Tagen?</div>`:'<p class="note">Ohne Übertragung schätzen wir deinen Verbrauch vorerst.</p>'}`}
   if(step==='activity'){const opts=[[1.4,'Wenig aktiv','Bürojob, unter 6.000 Schritte'],[1.55,'Mäßig aktiv','6.000–10.000 Schritte'],[1.7,'Aktiv','über 10.000 Schritte oder 3× Sport pro Woche'],[1.85,'Sehr aktiv','körperliche Arbeit oder fast täglich Sport']];
     h=head('bolt','Wie aktiv bist du?','Daraus schätzen wir deinen täglichen Verbrauch.')+`
     <div class="choice" id="wPal">${opts.map(([v,t,d])=>`<button type="button" data-v="${v}" aria-pressed="${Math.abs((s.pal||0)-v)<.01}"><b>${t}</b><span>${d}</span></button>`).join('')}</div>
@@ -1241,7 +1241,8 @@ function checkHistHash(){if(!/^#hx/.test(location.hash))return false;let raw=loc
   lsSet();
   if(res.base)wizHist=res.base;
   const last=sorted().filter(e=>e.eaten>0||e.rest>0).at(-1);wizGot=last||{date:state.today.date};
-  if(!state.settings.onboarded){WIZ=wizSteps();const want=res.base?'history':'daily';const i=WIZ.indexOf(want);openWiz(i>=0?i:wizStepSaved());render();return true}
+  wizRecv=res;
+  if(!state.settings.onboarded){openWiz(wizStepSaved());render();return true}
   render();
   $('importMsg').textContent=res.base?`Verlauf übernommen: ${res.days} Tage · Ruhe ${fmt(res.base.rest)} kcal, aktiv ${fmt(res.base.active)} kcal`:`Aktualisiert: ${res.days} ${res.days===1?'Tag':'Tage'} bis gestern, heute live`;
   $('importMsg').className='msg ok';status('Aktualisiert · auf diesem Gerät gespeichert');
