@@ -928,12 +928,12 @@ function calib(){
   for(const e of eatDays){sumDef+=deficit(e);const est=isEstimated(e);const r=est?s.baseRest:e.rest,a=est?Math.max(e.active||0,s.baseActive):(e.active||0);if(e.burn>0){sumRestMinusEat+=e.burn-e.eaten}else{sumRestMinusEat+=r-e.eaten;sumAct+=a}}
   const realKg=startW-endW,predKg=sumDef/k;
   const f=sumAct>0?(realKg*k-sumRestMinusEat)/sumAct:null;
-  return {n:W.length,span,realKg,predKg,f,days:days.length,eatDays:eatDays.length};
+  return {n:W.length,span,realKg,predKg,f,days:days.length,eatDays:eatDays.length,first,last:lastD};
 }
 let calSuggest=null;
 function renderCal(){
   const s=state.settings,c=calib();
-  const sp=c.span||0;$('calSpan').textContent=c.n?`${c.n} ${c.n===1?"Messung":"Messungen"} · ${sp} ${sp===1?"Tag":"Tage"}`:'';
+  const sp=c.span||0;$('calSpan').textContent=c.n?`${c.n} ${c.n===1?"Messung":"Messungen"}${c.first?` · ${ddmm(c.first)}–${ddmm(c.last)}`:''}`:'';
   const ready=sp>=CAL_DAYS&&c.n>=10&&c.eatDays>=14;
   $('calProgWrap').hidden=ready;$('calProg').style.width=Math.min(100,sp/CAL_DAYS*100)+'%';
   const sg=v=>(v>0?'−':v<0?'+':'±')+fmt1(Math.abs(v))+' kg';
