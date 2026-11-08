@@ -840,10 +840,13 @@ function renderDetail(){
 /* ---------- Tagesziel ---------- */
 function renderGoal(){
   const s=state.settings,tb=typicalBurn(),t=totals();syncTarget();
-  const ti=todayISO2(),def=planFor(ti),eat=Math.round((tb-def)/10)*10,pt=protTargets();
+  const ti=todayISO2(),def=planFor(ti),pt=protTargets(),td0=state.today,f=s.activePct/100;
+  /* Heute: Ruhe mindestens typisch, Aktivität mindestens typisch – mehr Bewegung erhöht das Ziel sofort */
+  const live=td0&&td0.date===ti&&s.useWatch&&(td0.active>0||td0.rest>0),more=live&&td0.active>s.baseActive;
+  const burnT=live?Math.max(td0.rest||0,s.baseRest)+Math.max(td0.active||0,s.baseActive)*f:tb,eat=Math.round((burnT-def)/10)*10;
   $('gTitle').textContent='Heute · '+['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][new Date().getDay()]+', '+ddmm(ti);
   $('gTempo').textContent='Plan Ø '+fmt(s.dailyTarget)+' kcal/Tag · ≈ −'+fmt1(s.dailyTarget*7/s.kcalPerKg)+' kg/Woche';
-  $('gEat').textContent=fmt(eat);$('gEatSub').textContent='bei '+fmt(tb)+' kcal Verbrauch';
+  $('gEat').textContent=fmt(eat);$('gEatSub').textContent='bei '+fmt(burnT)+' kcal Verbrauch'+(more?' · +'+fmt((td0.active-s.baseActive)*f)+' durch Bewegung':'');
   $('gProt').textContent=pt?fmt(pt.goal):'–';$('gProtSub').textContent=pt?'mindestens '+fmt(pt.min)+' g':'';
   $('gDef').textContent=fmt(def)+' kcal Defizit heute';
   const td=state.today;
