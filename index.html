@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Kalorien-Countdown</title>
+<title>Winter Arc</title>
 <meta name="description" content="Kostenloser Abnehm-Rechner: zählt dein Kaloriendefizit bis zum Zielgewicht herunter, mit Daten aus Apple Health.">
 <meta name="theme-color" content="#0E1525">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -496,7 +496,7 @@ code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;backgro
 
 
   <p class="status" id="status"></p>
-  <p class="foot">Kalorien-Countdown · Hobbyprojekt, keine medizinische Beratung · Daten bleiben auf deinem Gerät</p>
+  <p class="foot">Winter Arc · Hobbyprojekt, keine medizinische Beratung · Daten bleiben auf deinem Gerät</p>
 </div>
 
 <div class="wiz" id="wiz" hidden role="dialog" aria-modal="true" aria-labelledby="wizTitle">
@@ -1110,7 +1110,7 @@ function renderWiz(){
   $('wizBack').hidden=wizI===0;
   $('wizNext').textContent=step==='welcome'?'Los geht’s':step==='done'?'Zum Countdown':(step==='daily'&&!wizGot)||(step==='history'&&!wizHist&&!s.histDays)?'Später':'Weiter';
   let h='';
-  if(step==='welcome')h=head('flag','Dein Kalorien-Countdown','Du siehst jeden Tag, wie viele Kalorien dir bis zu deinem Zielgewicht noch fehlen. Die Werte kommen automatisch aus Apple Health.')+`
+  if(step==='welcome')h=head('flag','Winter Arc','Dein Kalorien-Countdown: Du siehst jeden Tag, wie viele Kalorien dir bis zu deinem Zielgewicht noch fehlen. Die Werte kommen automatisch aus Apple Health.')+`
     <ul class="reqs">
       <li><i class="tick">✓</i><div><b>iPhone</b></div></li>
       <li><i class="tick">✓</i><div><b>Yazio</b><span>oder eine andere Kalorien-App</span></div></li>
@@ -1126,7 +1126,7 @@ function renderWiz(){
   if(step==='watch')h=head('watch','Apple Watch','Hast du deine Apple Watch in den letzten 30 Tagen regelmäßig getragen?')+yn('wWatch',s.hasWatch)+`
     <p class="note" id="wWatchNote">${s.hasWatch===true?'Super. Im nächsten Schritt übertragen wir deinen Verlauf. Trag die Watch auch künftig täglich, dann rechnet der Countdown mit deinem echten Verbrauch.':s.hasWatch===false?'Kein Problem. Der Countdown rechnet dann mit einem geschätzten Verbrauch aus deinem Aktivitätslevel.':'Für einen genauen Countdown trägst du die Watch tagsüber durchgehend.'}</p>`;
   if(step==='history'){const hist=wizHist||(s.ownValues&&s.histDays?{days:s.histDays,rest:s.baseRest,active:s.baseActive}:null);
-    h=head('bolt','Verlauf übertragen','Einmalig: Kurzbefehl 1 holt deine Werte der letzten 5 Monate aus Health und berechnet daraus deinen Verbrauch.')+`
+    h=head('bolt','Kurzbefehl 1: Verlauf','Einmalig: Kurzbefehl 1 holt deine Werte der letzten 5 Monate aus Health und berechnet daraus deinen Verbrauch.')+`
     <ol class="steps-l"><li>Kurzbefehl laden und <b>hinzufügen</b>. Bei der Frage nach der Quelle <b>deine Apple Watch</b> wählen.</li><li>Einmal <b>starten</b> und den Health-Zugriff erlauben. Das dauert bis zu einer Minute. Danach öffnet sich diese Seite von selbst.</li></ol>
     <p class="note">Meldung „große Datenmengen“? Einstellungen → Apps → Kurzbefehle → Erweitert → „Teilen großer Datenmengen erlauben“.</p>
     ${scBtn(SHORTCUT_HISTORY,'Kurzbefehl 1 laden')}
@@ -1148,16 +1148,16 @@ function renderWiz(){
     (s.needYazio?`<div class="appcard"><b>Yazio</b><ol class="steps-l"><li>Yazio → <b>Profil</b> → <b>Zahnrad</b></li><li><b>Apple Health</b> → alles einschalten</li></ol></div>`:'')+
     (s.needScale?`<div class="appcard"><b>Renpho</b><ol class="steps-l"><li>Renpho → <b>Ich</b> → <b>Integrationen</b></li><li><b>Apple Health</b> → Gewicht erlauben</li></ol></div>`:'')+
     `<p class="note">Andere App? In den Einstellungen „Apple Health“ suchen und einschalten.</p>`;
-  if(step==='daily')h=head('sun','Kurzbefehl 2: Countdown öffnen','Dein normaler Zugang: Er holt die neuesten Werte aus Health und öffnet den Countdown.')+`
+  if(step==='daily')h=head('sun','Kurzbefehl 2: Winter Arc öffnen','Dein normaler Zugang: Er holt die neuesten Werte aus Health und öffnet Winter Arc.')+`
     <ol class="steps-l"><li>Laden und <b>hinzufügen</b>.${s.hasWatch?' Als Quelle <b>deine Apple Watch</b> wählen.':''}</li><li>Einmal <b>starten</b> und Health-Zugriff erlauben.</li></ol>
     ${scBtn(SHORTCUT_DAILY,'Kurzbefehl 2 laden')}
     <div class="waiting ${wizGot?'ok':''}">${wizGot?`${CHK} Verbunden, Werte bis ${weekday(wizGot.date)} ${ddmm(wizGot.date)} sind da`:'<i class="spin"></i> Warte auf den ersten Start …'}</div>
     <p class="note">Ab jetzt öffnest du den Countdown immer über Kurzbefehl 2. Die Werte aktualisieren sich dabei automatisch.</p>`;
   if(step==='home')h=head('home','Aufs Home-Bildschirm','Kurzbefehl 2 bekommt ein eigenes Icon und wird so zu deiner App.')+`
-    <ol class="steps-l"><li>App <b>Kurzbefehle</b> öffnen</li><li>Kurzbefehl 2 <b>lange drücken</b> → <b>Teilen</b></li><li><b>Zum Home-Bildschirm</b> → Name z. B. „Countdown“ → <b>Hinzufügen</b></li></ol>
+    <ol class="steps-l"><li>App <b>Kurzbefehle</b> öffnen</li><li>Kurzbefehl 2 <b>lange drücken</b> → <b>Teilen</b></li><li><b>Zum Home-Bildschirm</b> → Name „Winter Arc“ → <b>Hinzufügen</b></li></ol>
     <p class="note">Kurzbefehl 1 brauchst du nur einmal. Den kannst du danach in der Kurzbefehle-App lassen.</p>`;
   if(step==='done')h=head('check','Alles bereit')+wizTilesHTML()+`
-    <ul class="reqs"><li><i class="tick">1</i><div><b>Morgens wiegen</b></div></li><li><i class="tick">2</i><div><b>Countdown-Icon antippen</b><span>die Werte aktualisieren sich automatisch</span></div></li><li><i class="tick">3</i><div><b>Nach 3 Wochen</b><span>verfeinert der Abgleich mit der Waage deine Werte</span></div></li></ul>`;
+    <ul class="reqs"><li><i class="tick">1</i><div><b>Morgens wiegen</b></div></li><li><i class="tick">2</i><div><b>Winter-Arc-Icon antippen</b><span>die Werte aktualisieren sich automatisch</span></div></li><li><i class="tick">3</i><div><b>Nach 3 Wochen</b><span>verfeinert der Abgleich mit der Waage deine Werte</span></div></li></ul>`;
   $('wizBody').innerHTML=`<div class="ctr">${h}</div>`;$('wizBody').scrollTop=0;
   const pick=(id,cb)=>{const g=$(id);if(!g)return;g.onclick=e=>{const b=e.target.closest('button');if(!b)return;g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));cb&&cb(b.dataset.v)}};
   if(step==='profile'){const upd=()=>{const b=bmrOf(document.querySelector('#wSex [aria-pressed="true"]').dataset.v,wizVal('wAge'),wizVal('wH'),wizVal('wW'));$('wBmr').textContent=b?`Grundumsatz ca. ${fmt(b)} kcal pro Tag`:'Bitte alle drei Felder ausfüllen.'};
@@ -1237,7 +1237,7 @@ function importSections(sec){
 function checkHistHash(){if(!/^#hx/.test(location.hash))return false;let raw=location.hash.replace(/^#hx(=|%3D)?/i,'').replace(/^(%0A|%0D|%20|\s)+/i,''),txt='';try{txt=decodeURIComponent(raw)}catch(e){txt=raw}
   try{history.replaceState(null,'',location.pathname)}catch(e){}
   const res=importSections(parseSections(txt));
-  if(!res){status('Die Werte vom Kurzbefehl konnten nicht gelesen werden.');return true}
+  if(!res){status('Die Werte vom Kurzbefehl konnten nicht gelesen werden. Prüfe die Text-Aktion mit ESSEN, PROTEIN usw.');return true}
   lsSet();
   if(res.base)wizHist=res.base;
   const last=sorted().filter(e=>e.eaten>0||e.rest>0).at(-1);wizGot=last||{date:state.today.date};

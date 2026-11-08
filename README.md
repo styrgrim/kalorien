@@ -1,4 +1,6 @@
-# Kalorien-Countdown
+# Winter Arc
+
+Kalorien-Countdown
 
 Kostenloser Abnehm-Rechner für das iPhone. Er zählt dein Kaloriendefizit bis zum Zielgewicht herunter und nutzt dafür deine Daten aus Apple Health (Apple Watch, Ernährungs-App, Waage).
 
