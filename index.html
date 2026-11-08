@@ -125,7 +125,9 @@ h2{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01
 .mday .pdot{position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;box-shadow:0 0 0 1.5px var(--surface)}
 .pill.r-better,.pill.r-ok,.pill.r-worse,.pill.r-bad,.pill.r-surplus{font-weight:700}
 .mleg i.dt{border-radius:50%;width:9px;height:9px;vertical-align:0}
-.mday.pre{opacity:.55}
+.mday.pre{opacity:.4;filter:grayscale(1)}
+.mday{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;transition:transform .8s}
+.mday.lp{transform:scale(.88)}
 .mday.plan small{color:var(--muted);font-weight:500}
 .dot-leg{background:var(--accent);border-radius:50%!important;width:8px!important;height:8px!important;vertical-align:0!important}
 .dhead{text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}
@@ -545,10 +547,11 @@ const weekday=s=>WD[parseISO(s).getDay()];
 
 const restMin=()=>Math.round((state.settings.baseRest||1900)*0.8);
 function typicalBurn(){const s=state.settings;return s.baseRest+s.baseActive*(s.activePct/100)}
-const isEstimated=e=>!(e.burn>0)&&(!state.settings.useWatch||!(e.rest>=restMin()));
+const isEstimated=e=>!(e.burn>0)&&!e.live&&(!state.settings.useWatch||!(e.rest>=restMin()));
 function burnOf(e){
   const s=state.settings,f=s.activePct/100;
   if(e.burn>0)return e.burn;
+  if(e.live)return s.useWatch?Math.max(e.rest||0,s.baseRest)+(e.active||0)*f:typicalBurn();
   if(!s.useWatch||!(e.rest>0))return typicalBurn();
   if(e.rest<restMin())return s.baseRest+Math.max(e.active||0,s.baseActive)*f;
   return e.rest+(e.active||0)*f;
@@ -565,10 +568,16 @@ const todayISO2=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.ge
 function currentWeight(){const w=sorted().filter(e=>e.weight>0);return w.length?w.at(-1).weight:startWeightOf()}
 const deficit=e=>e.eaten>0?burnOf(e)-e.eaten:null;
 const sorted=()=>[...state.entries].sort((a,b)=>a.date.localeCompare(b.date));
-function startWeightOf(){const s=state.settings,w=sorted().find(e=>e.weight>0);return s.startWeight||(w&&w.weight)||null}
+function firstCountDate(){const s=state.settings,inc=Object.keys(dayInc()).filter(d=>dayInc()[d]).sort();let f=s.startDate||null;if(inc[0]&&(!f||inc[0]<f))f=inc[0];return f}
+function scaleStartWeight(){const W=sorted().filter(e=>e.weight>0);if(!W.length)return null;const f=firstCountDate();if(!f)return W[0].weight;
+  const after=W.find(e=>e.date>=f),before=W.filter(e=>e.date<f).at(-1);
+  if(after&&(parseISO(after.date)-parseISO(f))/864e5<=3)return after.weight;return before?before.weight:after.weight}
+function startWeightOf(){const s=state.settings;return s.startWeightFix||scaleStartWeight()||s.startWeight||null}
 function goalKgOf(){const s=state.settings,st=startWeightOf();return (s.goalWeight>0&&st>0)?Math.max(0.5,Math.round((st-s.goalWeight)*10)/10):s.goalKg}
 function goalWeightOf(){const s=state.settings,st=startWeightOf();return s.goalWeight>0?s.goalWeight:(st?st-s.goalKg:null)}
-const inPlan=e=>!state.settings.startDate||e.date>=state.settings.startDate;
+function dayInc(){const s=state.settings;if(!s.dayInc||typeof s.dayInc!=='object')s.dayInc={};return s.dayInc}
+const countsDate=d=>{const o=dayInc()[d];return o!=null?o:(!state.settings.startDate||d>=state.settings.startDate)};
+const inPlan=e=>countsDate(e.date);
 function totals(){
   const s=state.settings,total=goalKgOf()*s.kcalPerKg;
   const counted=state.entries.filter(e=>inPlan(e)&&deficit(e)!=null);
@@ -790,7 +799,7 @@ function renderMonth(){
   let sumD=0,nD=0,miss=0;
   for(let d=1;d<=days;d++){
     const dt=new Date(y,m,d),iso=isoOf(dt),e=byDate[iso],pr=pend[iso],view=pr?{...(e||{}),...pr}:e;
-    const pre=state.settings.startDate&&iso<state.settings.startDate;
+    const pre=!countsDate(iso);
     const r=view&&!pre?rateDay(view):null,df=view&&!pre?deficit(view):null;
     if(e&&inPlan(e)&&rateDay(e)){sumD+=deficit(e);nD++;if(['worse','bad','surplus'].includes(rateDay(e)))miss++}
     const planned=!r&&dt>=now;
@@ -800,16 +809,16 @@ function renderMonth(){
     h+=`<button type="button" class="${cls}" data-d="${iso}" aria-pressed="${mSel===iso}" aria-label="${d}. ${r?RATE_TXT[r]:planned?'Ziel '+planFor(iso)+' kcal':'keine Daten'}">${dot}<b>${d}</b><small>${small}</small></button>`;
   }
   $('mGrid').innerHTML=h;
-  $('mSum').textContent=nD?`${nD} ${nD===1?'Tag':'Tage'} erfasst · Ø Defizit ${fmt(sumD/nD)} kcal · gesamt ≈ ${fmt1(sumD/state.settings.kcalPerKg)} kg · ${miss?miss+'× unter Ziel':'kein Tag unter Ziel'}`:'Graue Zahlen sind geplante Defizite. Tippe einen Tag an, um sein Ziel zu ändern.';
+  $('mSum').textContent=nD?`${nD} ${nD===1?'Tag':'Tage'} erfasst · Ø Defizit ${fmt(sumD/nD)} kcal · gesamt ≈ ${fmt1(sumD/state.settings.kcalPerKg)} kg · ${miss?miss+'× unter Ziel':'kein Tag unter Ziel'}`:'Graue Zahlen sind geplante Defizite. Tippe einen Tag an, um sein Ziel zu ändern. Lange drücken: Tag zählt / zählt nicht.';
   renderDetail();
 }
 function renderDetail(){
   const box=$('mDetail');if(!mSel){box.hidden=true;return}
   const s=state.settings,e=state.entries.find(x=>x.date===mSel),p=planFor(mSel),pt=protTargets(),tb=typicalBurn();
   const dt=parseISO(mSel),wdLong=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][dt.getDay()];
-  const preD=state.settings.startDate&&mSel<state.settings.startDate;
+  const preD=!countsDate(mSel);
   const r=e&&!preD?rateDay(e):null,d=e?deficit(e):null;
-  const status=preD?'<span class="hint">vor dem Start, zählt nicht zum Countdown</span>':r?pillR(r,RATE_TXT[r]+` (${d-p>=0?'+':'−'}${fmt(Math.abs(d-p))})`):(e?'<span class="hint">kein Essen erfasst</span>':'<span class="hint">geplant</span>');
+  const status=preD?'<span class="hint">zählt nicht · lange drücken zum Aktivieren</span>':r?pillR(r,RATE_TXT[r]+` (${d-p>=0?'+':'−'}${fmt(Math.abs(d-p))})`):(e?'<span class="hint">kein Essen erfasst</span>':'<span class="hint">geplant</span>');const liveNote=e&&e.live?'<p class="hint">Heute live: Verbrauch = volle Ruheenergie + bisherige Aktivität. Der Wert ändert sich bis Mitternacht.</p>':'';
   const isOverride=dayPlans()[mSel]!=null,wp=weekPlan()[wIdx(dt)];
   let html=`<div class="dhead"><b>${wdLong}, ${dt.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}</b>${status}</div>
   <div class="dmain">
@@ -822,7 +831,7 @@ function renderDetail(){
     if(isEstimated(e))html+='<p class="hint">* geschätzt, die Watch wurde nicht durchgehend getragen</p>';
   }else if(pt)html+=`<div class="drow"><span>Protein <b>${fmt(pt.goal)} g</b> (mindestens ${fmt(pt.min)} g)</span></div>`;
   if(isOverride&&p!==wp)html+=`<div class="drow"><button type="button" class="linkbtn" id="dAll">Für alle ${wdLong}e übernehmen</button><button type="button" class="linkbtn" id="dReset">Zurück auf ${fmt(wp)}</button></div>`;
-  box.innerHTML=html;box.hidden=false;
+  box.innerHTML=html+liveNote;box.hidden=false;
   const setP=v=>{dayPlans()[mSel]=Math.min(1500,Math.max(0,v));commit(`${ddmm(mSel)}: Ziel ${fmt(dayPlans()[mSel])} kcal`)};
   $('dMinus').onclick=()=>setP(p-50);$('dPlus').onclick=()=>setP(p+50);
   if($('dAll'))$('dAll').onclick=()=>{const wd=wIdx(dt);weekPlan()[wd]=p;const dp=dayPlans();for(const k of Object.keys(dp))if(wIdx(parseISO(k))===wd&&k>=mSel)delete dp[k];syncTarget();commit(`Alle ${wdLong}e: ${fmt(p)} kcal`)};
@@ -860,7 +869,7 @@ const CAL_DAYS=21;
 function calib(){
   const s=state.settings,k=s.kcalPerKg,all=sorted();
   const fe=all.find(e=>inPlan(e)&&e.eaten>0);if(!fe)return {n:0,span:0};
-  const startIso=isoOf(new Date(parseISO(fe.date).getTime()-864e5));
+  const startIso=fe.date;
   const W=all.filter(e=>e.weight>0&&e.date>=startIso);
   if(W.length<2)return {n:W.length,span:0};
   const first=W[0].date,lastD=W.at(-1).date;
@@ -870,7 +879,7 @@ function calib(){
   const startMid=W.filter(e=>(parseISO(e.date)-parseISO(first))/864e5<7),endMid=W.filter(e=>(parseISO(lastD)-parseISO(e.date))/864e5<7);
   const midT=l=>l.reduce((a,e)=>a+parseISO(e.date).getTime(),0)/l.length;
   const t0=midT(startMid),t1=midT(endMid);
-  const days=all.filter(e=>{const tt=parseISO(e.date).getTime();return tt>t0&&tt<=t1});
+  const days=all.filter(e=>{const tt=parseISO(e.date).getTime();return !e.live&&tt>=t0&&tt<t1});
   const eatDays=days.filter(e=>e.eaten>0);
   let sumDef=0,sumRestMinusEat=0,sumAct=0;
   for(const e of eatDays){sumDef+=deficit(e);const est=isEstimated(e);const r=est?s.baseRest:e.rest,a=est?Math.max(e.active||0,s.baseActive):(e.active||0);if(e.burn>0){sumRestMinusEat+=e.burn-e.eaten}else{sumRestMinusEat+=r-e.eaten;sumAct+=a}}
@@ -963,7 +972,7 @@ function renderWhatIf(){
 function renderSettings(){
   const s=state.settings;
   const gw=goalWeightOf();$('sGoalW').value=gw?Math.round(gw*10)/10:'';showGoalCalc();$('sKcalKg').value=s.kcalPerKg;$('sBaseRest').value=s.baseRest;$('sBaseActive').value=s.baseActive;$('sProtKg').value=s.protPerKg;
-  $('sWatch').checked=!!s.useWatch;$('sStartD').value=s.startDate||'';$('sSex').value=s.sex||'m';$('sAge').value=s.age??'';$('sHeight').value=s.height??'';$('sActivePct').value=s.activePct;$('sStartW').value=s.startWeight??'';
+  $('sWatch').checked=!!s.useWatch;$('sStartD').value=s.startDate||'';$('sSex').value=s.sex||'m';$('sAge').value=s.age??'';$('sHeight').value=s.height??'';$('sActivePct').value=s.activePct;$('sStartW').value=s.startWeightFix??'';{const sw=scaleStartWeight();$('sStartW').placeholder=sw?'Waage: '+fmt1(sw):'erster Messwert'}
 }
 
 /* ---------- Import ---------- */
@@ -1062,7 +1071,7 @@ $('saveSettings').addEventListener('click',()=>{
   const n=(id,f)=>{const v=parseFloat($(id).value);return isNaN(v)||v<0?f:v},s=state.settings;
   const gw=parseFloat($('sGoalW').value);s.goalWeight=gw>0?gw:null;s.kcalPerKg=n('sKcalKg',s.kcalPerKg)||s.kcalPerKg;s.baseRest=n('sBaseRest',s.baseRest)||s.baseRest;s.baseActive=n('sBaseActive',s.baseActive);s.protPerKg=n('sProtKg',s.protPerKg)||s.protPerKg;
   s.startDate=$('sStartD').value||s.startDate;s.useWatch=$('sWatch').checked;s.activePct=Math.min(120,n('sActivePct',s.activePct));s.sex=$('sSex').value;const ag=parseFloat($('sAge').value);s.age=ag>0?ag:s.age;const hg=parseFloat($('sHeight').value);s.height=hg>0?hg:s.height;
-  const sw=parseFloat($('sStartW').value);s.startWeight=sw>0?sw:null;
+  const sw=parseFloat($('sStartW').value);s.startWeightFix=sw>0?sw:null;
   if(s.goalWeight>0){const st=startWeightOf();if(st>0)s.goalKg=Math.max(0.5,Math.round((st-s.goalWeight)*10)/10)}
   commit('Einstellungen gespeichert');
 });
@@ -1075,7 +1084,14 @@ document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',(
 try{chartMode=localStorage.getItem('kc-chart')||'deficit'}catch(e){}
 let rz;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{renderChart();renderWhatIf();chartDW()},150)});
 let wiRaf;$('wiSlider').addEventListener('input',e=>{wiRate=+e.target.value;cancelAnimationFrame(wiRaf);wiRaf=requestAnimationFrame(renderWhatIf)});
-$('mGrid').addEventListener('click',e=>{const b=e.target.closest('button[data-d]');if(!b||b.disabled)return;mSel=mSel===b.dataset.d?null:b.dataset.d;renderMonth()});
+let lpT=null,lpFired=false,lpXY=null;
+$('mGrid').addEventListener('pointerdown',ev=>{const b=ev.target.closest('button[data-d]');if(!b)return;lpFired=false;lpXY=[ev.clientX,ev.clientY];clearTimeout(lpT);b.classList.add('lp');
+  lpT=setTimeout(()=>{b.classList.remove('lp');const d=b.dataset.d;if(d>todayISO2())return;lpFired=true;const now=!countsDate(d),def=!state.settings.startDate||d>=state.settings.startDate;
+    if(now===def)delete dayInc()[d];else dayInc()[d]=now;try{navigator.vibrate&&navigator.vibrate(20)}catch(e){}mSel=d;commit(`${ddmm(d)} ${now?'zählt jetzt':'zählt nicht mehr'}`)},800)});
+const lpCancel=ev=>{if(ev&&ev.type==='pointermove'&&lpXY&&Math.hypot(ev.clientX-lpXY[0],ev.clientY-lpXY[1])<10)return;clearTimeout(lpT);document.querySelectorAll('.mday.lp').forEach(x=>x.classList.remove('lp'))};
+['pointerup','pointercancel','pointerleave','pointermove'].forEach(t=>$('mGrid').addEventListener(t,lpCancel));
+$('mGrid').addEventListener('contextmenu',ev=>ev.preventDefault());
+$('mGrid').addEventListener('click',e=>{if(lpFired){lpFired=false;return}const b=e.target.closest('button[data-d]');if(!b||b.disabled)return;mSel=mSel===b.dataset.d?null:b.dataset.d;renderMonth()});
 $('mPrev').addEventListener('click',()=>{mView.m--;if(mView.m<0){mView.m=11;mView.y--}mSel=null;renderMonth()});
 $('mNext').addEventListener('click',()=>{mView.m++;if(mView.m>11){mView.m=0;mView.y++}mSel=null;renderMonth()});
 document.querySelectorAll('.dw-seg button').forEach(b=>b.addEventListener('click',()=>{dwN=+b.dataset.n;try{localStorage.setItem('kc-dw',dwN)}catch(e){}chartDW()}));
@@ -1107,7 +1123,7 @@ function closeWiz(){$('wiz').hidden=true;document.body.style.overflow='';try{loc
 function wizVal(id){const el=$(id);return el?parseFloat(String(el.value).replace(',','.')):NaN}
 function scBtn(url,label){return url?`<a class="bigbtn" href="${url}" target="_blank" rel="noopener">${label}</a>`:`<div class="waiting">Der Link zum Kurzbefehl folgt in Kürze.</div>`}
 function wizTilesHTML(){
-  const s=state.settings,tb=typicalBurn(),def=s.dailyTarget||500,w=s.startWeight,eat=Math.round((tb-def)/10)*10;
+  const s=state.settings,tb=typicalBurn(),def=s.dailyTarget||500,w=startWeightOf(),eat=Math.round((tb-def)/10)*10;
   const kg=s.goalWeight&&w?w-s.goalWeight:null,days=kg>0?kg*s.kcalPerKg/def:null;
   const end=days?new Date(Date.now()+Math.ceil(days)*864e5).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'}):'–';
   const prot=w?Math.round(w*s.protPerKg/5)*5:null;
@@ -1143,7 +1159,7 @@ function renderWiz(){
     <ol class="steps-l"><li>Kurzbefehl laden und <b>hinzufügen</b>.</li><li>Einmal <b>starten</b> und den Health-Zugriff erlauben. Das dauert bis zu einer Minute. Danach öffnet sich diese Seite von selbst.</li></ol>
     <p class="note">Meldung „große Datenmengen“? Einstellungen → Apps → Kurzbefehle → Erweitert → „Teilen großer Datenmengen erlauben“.</p>
     ${scBtn(SHORTCUT_HISTORY,'Kurzbefehl 1 laden')}
-    ${hist?`<div class="waiting ok">${CHK} Verlauf da: Ruhe ≈ ${fmt(hist.rest)} kcal, aktiv ≈ ${fmt(hist.active)} kcal pro Tag</div>`:wizRecv?`<div class="waiting">Daten empfangen (${wizRecv.n} Tage), aber ${wizRecv.empty&&wizRecv.empty.length?'leer: '+wizRecv.empty.join(', '):'zu wenig Ruhe- oder Aktivenergie'}. Prüfe diese Suchen im Kurzbefehl.</div>`:'<p class="note">Ohne Übertragung schätzen wir deinen Verbrauch vorerst.</p>'}${wizRecv&&wizRecv.report?`<div class="secrep">${secRepHTML(wizRecv.report)}</div>`:''}`}
+    ${wizRecv&&wizRecv.report?'':hist?`<div class="waiting ok">${CHK} Verlauf da: Ruhe ≈ ${fmt(hist.rest)} kcal, aktiv ≈ ${fmt(hist.active)} kcal pro Tag</div>`:wizRecv?`<div class="waiting">Daten empfangen (${wizRecv.n} Tage), aber ${wizRecv.empty&&wizRecv.empty.length?'leer: '+wizRecv.empty.join(', '):'zu wenig Ruhe- oder Aktivenergie'}. Prüfe diese Suchen im Kurzbefehl.</div>`:'<p class="note">Ohne Übertragung schätzen wir deinen Verbrauch vorerst.</p>'}${wizRecv&&wizRecv.report?`<div class="secrep">${secRepHTML(wizRecv.report)}</div>`:''}`}
   if(step==='activity'){const opts=[[1.4,'Wenig aktiv','Bürojob, unter 6.000 Schritte'],[1.55,'Mäßig aktiv','6.000–10.000 Schritte'],[1.7,'Aktiv','über 10.000 Schritte oder 3× Sport pro Woche'],[1.85,'Sehr aktiv','körperliche Arbeit oder fast täglich Sport']];
     h=head('bolt','Wie aktiv bist du?','Daraus schätzen wir deinen täglichen Verbrauch.')+`
     <div class="choice" id="wPal">${opts.map(([v,t,d])=>`<button type="button" data-v="${v}" aria-pressed="${Math.abs((s.pal||0)-v)<.01}"><b>${t}</b><span>${d}</span></button>`).join('')}</div>
@@ -1164,7 +1180,7 @@ function renderWiz(){
   if(step==='daily')h=head('sun','Kurzbefehl 2: Winter Arc öffnen','Dein normaler Zugang: Er holt die neuesten Werte aus Health und öffnet Winter Arc.')+`
     <ol class="steps-l"><li>Laden und <b>hinzufügen</b>.</li><li>Einmal <b>starten</b> und Health-Zugriff erlauben.</li></ol>
     ${scBtn(SHORTCUT_DAILY,'Kurzbefehl 2 laden')}
-    <div class="waiting ${wizGot?'ok':''}">${wizGot?`${CHK} Verbunden${state.today&&state.today.date===todayISO2()&&(state.today.eaten>0||state.today.active>0||state.today.steps>0)?', Werte bis heute (live) sind da':`, Werte bis ${weekday(wizGot.date)} ${ddmm(wizGot.date)} sind da`}`:'<i class="spin"></i> Warte auf den ersten Start …'}</div>
+    ${wizRecv&&wizRecv.report&&wizRecv.n<30?'':`<div class="waiting ${wizGot?'ok':''}">${wizGot?`${CHK} Verbunden${state.today&&state.today.date===todayISO2()&&(state.today.eaten>0||state.today.active>0||state.today.steps>0)?', Werte bis heute (live) sind da':`, Werte bis ${weekday(wizGot.date)} ${ddmm(wizGot.date)} sind da`}`:'<i class="spin"></i> Warte auf den ersten Start …'}</div>`}
     ${wizRecv&&wizRecv.report&&wizRecv.n<30?`<div class="secrep">${secRepHTML(wizRecv.report)}</div>`:''}
     <p class="note">Ab jetzt öffnest du den Countdown immer über Kurzbefehl 2. Die Werte aktualisieren sich dabei automatisch.</p>`;
   if(step==='home')h=head('home','Aufs Home-Bildschirm','Kurzbefehl 2 bekommt ein eigenes Icon und wird so zu deiner App.')+`
@@ -1242,7 +1258,7 @@ function sectionReport(sec,n){const watch=state.settings.hasWatch!==false;
     if(!l){st=(!watch&&'ars'.includes(k))?'opt':'bad';txt='Abschnitt fehlt'}
     else if(!all.length){st=(!watch&&'ars'.includes(k))?'opt':'bad';txt=(!watch&&'ars'.includes(k))?'leer, wird geschätzt':'leer'}
     else if(med<lo||med>hi){st='warn';txt=`Ø ${fm(med)} ${unit}<br>${med>hi?(k==='r'||k==='s'||k==='a'?'doppelt?':'zu hoch'):(k==='r'?'Watch?':'zu niedrig')}`}
-    else{st=full.length<tot*.25&&n>7&&k!=='w'&&k!=='e'&&k!=='p'?'warn':'ok';txt=`${full.length||all.length} Tage<br>Ø ${fm(med)}${unit?' '+unit:''}`}
+    else{st=full.length<tot*.25&&n>7&&k!=='w'&&k!=='e'&&k!=='p'?'warn':'ok';txt=`${full.length||all.length} ${(full.length||all.length)===1?'Tag':'Tage'}<br>Ø ${fm(med)}${unit?' '+unit:''}`}
     return {k,name,st,txt}})}
 const secRepHTML=r=>r.map(x=>`<div class="s-${x.st}"><b>${x.st==='ok'?'✓':x.st==='opt'?'–':x.st==='warn'?'!':'✗'} ${x.name}</b><span>${x.txt}</span></div>`).join('');
 function importSections(sec){
@@ -1256,12 +1272,14 @@ function importSections(sec){
     if(!(r.e>0||r.a>0||r.rr>0))continue;
     const d=dateOf(i);let e=state.entries.find(x=>x.date===d);if(!e){e={date:d};state.entries.push(e)}
     if(r.e>15000)r.e=0;if(r.a>6000)r.a=0;if(r.rr>6000)r.rr=0;
-    if(r.e>0)e.eaten=Math.round(r.e);if(r.p>0)e.protein=Math.round(r.p);if(r.a>0)e.active=Math.round(r.a);if(r.rr>0)e.rest=Math.round(r.rr);if(r.st>0)e.steps=Math.round(r.st);
+    delete e.live;if(r.e>0)e.eaten=Math.round(r.e);if(r.p>0)e.protein=Math.round(r.p);if(r.a>0)e.active=Math.round(r.a);if(r.rr>0)e.rest=Math.round(r.rr);if(r.st>0)e.steps=Math.round(r.st);
     days++;
   }
   /* Gewicht gehört zum Tag der Messung, auch heute */
   for(let i=0;i<n;i++){const w=at('w',i);if(!(w>0&&w<=400))continue;const d=dateOf(i);let e=state.entries.find(x=>x.date===d);if(!e){e={date:d};state.entries.push(e)}e.weight=Math.round(w*10)/10}
   const t=n-1;state.today={date:dateOf(t),eaten:Math.round(at('e',t)),protein:Math.round(at('p',t)),active:Math.round(at('a',t)),rest:Math.round(at('r',t)),steps:Math.round(at('s',t)),at:Date.now()};
+  {const td=state.today;if(td.eaten>0||td.active>0||td.rest>0){let e=state.entries.find(x=>x.date===td.date);if(!e){e={date:td.date};state.entries.push(e)}
+    for(const k of ['eaten','protein','active','rest','steps']){if(td[k]>0)e[k]=td[k];else delete e[k]}e.live=true}}
   let base=null;if(n>=30&&sec.a&&!(sec.r||[]).some(v=>v>500)){const A=(sec.a||[]).slice(1,-1),S=(sec.s||[]).slice(1,-1);const v=A.filter((x,i)=>x>=100&&(S[i]==null||S[i]>=1500)).slice(-60).sort((x,y)=>x-y);
     if(v.length>=14){const s=state.settings;s.baseActive=Math.round(v[Math.floor(v.length/2)]/10)*10;s.hasWatch=true;s.useWatch=true;s.histDays=v.length}}
   if(n>=30&&sec.a&&sec.r){base=baseFromLists((sec.a||[]).slice(1,-1),(sec.r||[]).slice(1,-1),(sec.s||[]).slice(1,-1));
