@@ -173,6 +173,22 @@ select.in{appearance:none;-webkit-appearance:none}
 .calc b{font-family:var(--display);font-weight:800;font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
 .calc span{font-size:12px;color:var(--muted)}
 .calc p{grid-column:1/-1;margin:0;font-size:13px;color:var(--muted)}
+.calc4{background:var(--accent-soft);border-radius:16px;padding:14px 8px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.calc4 div{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0}
+.calc4 b{font-family:var(--display);font-weight:800;font-size:clamp(17px,5vw,22px);line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap}
+.calc4 span{font-size:11px;color:var(--muted);line-height:1.25;margin-top:2px}
+.goal-in{display:flex;justify-content:center}
+.center-f{align-items:center;text-align:center!important;width:min(220px,100%)}
+.in.big{font-size:28px;font-weight:700;text-align:center;font-family:var(--display);padding:10px}
+.slider{display:flex;flex-direction:column;align-items:center;gap:4px}
+.slider .sv{font-family:var(--display);font-weight:800;font-size:30px;font-variant-numeric:tabular-nums}
+.slider input{width:100%;accent-color:var(--accent);margin:4px 0}
+.slider .wi-scale{width:100%}
+.box{background:var(--surface-2);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;text-align:left}
+.box>b{text-align:center;font-size:16px}
+.box .label{text-align:center}
+.appcard{background:var(--surface-2);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;text-align:left}
+.appcard>b{font-size:15px}
 .steps-l{margin:0;padding-left:22px;text-align:left;display:flex;flex-direction:column;gap:8px;font-size:14px}
 .steps-l li::marker{color:var(--accent);font-weight:700}
 .bigbtn{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-weight:700;font-size:17px;background:var(--accent);color:var(--on-accent);border-radius:14px;padding:15px}
@@ -441,7 +457,7 @@ code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;backgro
       <div class="row">
         <label class="f" for="sKcalKg">kcal pro kg Fett<input class="in" id="sKcalKg" type="number" inputmode="numeric" min="1000" step="100"></label>
       </div>
-      <p class="hint">Das Essensziel ergibt sich aus typischer Ruheenergie + Aktivkalorien minus dem Defizit des Tages. Tage, an denen die Ruheenergie unter 1.700 kcal liegt (Watch nicht den ganzen Tag getragen), rechnet der Countdown mit den typischen Werten. Die Watch schätzt Aktivkalorien eher zu hoch, deshalb startet die Anrechnung bei 80 %; der Abgleich mit der Waage schlägt nach drei Wochen deinen persönlichen Wert vor. 1 kg Körperfett ≈ 7.000 kcal.</p>
+      <p class="hint">Das Essensziel ergibt sich aus typischer Ruheenergie + Aktivkalorien minus dem Defizit des Tages. Tage, an denen die Ruheenergie mehr als 20 % unter deinem typischen Wert liegt (Watch nicht den ganzen Tag getragen), rechnet der Countdown mit den typischen Werten. Die Watch schätzt Aktivkalorien eher zu hoch, deshalb startet die Anrechnung bei 80 %; der Abgleich mit der Waage schlägt nach drei Wochen deinen persönlichen Wert vor. 1 kg Körperfett ≈ 7.000 kcal.</p>
       <button class="btn-sm" type="button" id="saveSettings">Speichern</button>
       <p class="label center-t" style="margin-top:8px">Deine Daten</p>
       <p class="hint">Alles wird nur auf diesem Gerät in Safari gespeichert. Sichere deine Daten ab und zu, zum Beispiel vor einem Handywechsel.</p>
@@ -481,7 +497,9 @@ code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;backgro
 
 <script>
 const DEFAULT={settings:{goalKg:10,kcalPerKg:7000,tdee:2500,dailyTarget:500,useWatch:true,activePct:80,startWeight:null,goalWeight:null,baseRest:1900,baseActive:600,protPerKg:1.8,weekPlan:null,dayPlan:null,sex:'m',age:null,height:null,pal:1.55,ownValues:false,onboarded:false,v:3},entries:[]};
-const SHORTCUT_URL='https://www.icloud.com/shortcuts/a51571c374ea4c33b17abba03d768bb0';
+/* iCloud-Links der beiden Kurzbefehle (leer = noch nicht freigegeben) */
+const SHORTCUT_DAILY='';
+const SHORTCUT_HISTORY='';
 const LS_KEY='kc-v1';
 let state=structuredClone(DEFAULT), pending=null, chartMode='deficit';
 const $=id=>document.getElementById(id);
@@ -493,14 +511,14 @@ const ddmm=s=>{const [,m,d]=s.split('-');return `${d}.${m}.`};
 const WD=['So','Mo','Di','Mi','Do','Fr','Sa'];
 const weekday=s=>WD[parseISO(s).getDay()];
 
-const REST_MIN=1700;
+const restMin=()=>Math.round((state.settings.baseRest||1900)*0.8);
 function typicalBurn(){const s=state.settings;return s.baseRest+s.baseActive*(s.activePct/100)}
-const isEstimated=e=>!(e.burn>0)&&(!state.settings.useWatch||!(e.rest>=REST_MIN));
+const isEstimated=e=>!(e.burn>0)&&(!state.settings.useWatch||!(e.rest>=restMin()));
 function burnOf(e){
   const s=state.settings,f=s.activePct/100;
   if(e.burn>0)return e.burn;
   if(!s.useWatch||!(e.rest>0))return typicalBurn();
-  if(e.rest<REST_MIN)return s.baseRest+Math.max(e.active||0,s.baseActive)*f;
+  if(e.rest<restMin())return s.baseRest+Math.max(e.active||0,s.baseActive)*f;
   return e.rest+(e.active||0)*f;
 }
 const WDN=['Mo','Di','Mi','Do','Fr','Sa','So'];
@@ -924,7 +942,7 @@ function showPending(recs){
   const probe={...state.entries.find(e=>e.date===r.date),...r},d=deficit(probe);
   const items=[[`${weekday(r.date)} ${ddmm(r.date)}`,'Tag'],[r.eaten?fmt(r.eaten):'–','gegessen'],[fmt(burnOf(probe)),'Verbrauch'],[d==null?'–':(d>=0?'−':'+')+fmt(Math.abs(d)),'Defizit'],[r.protein?fmt(r.protein)+' g':'–','Protein'],[r.steps?fmt(r.steps):'–','Schritte'],[r.weight?fmt1(r.weight)+' kg':'–','Gewicht']];
   box.innerHTML=items.map(([b,s])=>`<div><b>${b}</b><span>${s}</span></div>`).join('');box.hidden=false;
-  const warn=[];if(r.rest>0&&r.rest<REST_MIN)warn.push('Ruheenergie niedrig, die Watch wurde wohl nicht den ganzen Tag getragen. Es wird dein typischer Verbrauch verwendet.');if(r.rest>3000)warn.push('Ruheenergie ungewöhnlich hoch – fehlt der Quellen-Filter?');if(r.steps>40000)warn.push('Schritte sehr hoch – doppelt gezählt?');
+  const warn=[];if(r.rest>0&&r.rest<restMin())warn.push('Ruheenergie niedrig, die Watch wurde wohl nicht den ganzen Tag getragen. Es wird dein typischer Verbrauch verwendet.');if(r.rest>Math.max(3000,(state.settings.baseRest||0)*1.4))warn.push('Ruheenergie ungewöhnlich hoch – fehlt der Quellen-Filter?');if(r.steps>40000)warn.push('Schritte sehr hoch – doppelt gezählt?');
   const exists=state.entries.some(e=>e.date===r.date);
   $('importMsg').textContent=(warn.length?warn.join(' '):'Werte erkannt.')+(exists?' Der Tag ist schon da und wird aktualisiert.':'')+' Jetzt „Senden“.';
   $('importMsg').className='msg'+(warn.some(w=>!w.startsWith('Ruheenergie niedrig'))?' err':'');
@@ -976,11 +994,11 @@ function parseHash(h){
 }
 function checkHash(){
   const r=parseHash(location.hash);
-  if(r&&!state.settings.onboarded){wizGot=r;if(!$('wiz').hidden&&WIZ[wizI]==='shortcut')renderWiz();return}
+  if(r&&!state.settings.onboarded){wizGot=r;if(!$('wiz').hidden&&WIZ[wizI]==='daily')renderWiz();return}
   if(r)showPending([r]);
   else if(/^#kc-/i.test(location.hash)){$('importMsg').textContent='Der Link enthält kein gültiges Datum. Im Kurzbefehl das Datumsformat auf yyyyMMdd stellen.';$('importMsg').className='msg err'}
 }
-addEventListener('hashchange',checkHash);
+addEventListener('hashchange',()=>{if(/^#import=/.test(location.hash))return offerImport(location.hash.slice(8));if(/^#hx=/.test(location.hash))return checkHistHash();checkHash()});
 $('sendBtn').addEventListener('click',()=>{
   if(!pending)return;
   for(const r of pending){let e=state.entries.find(x=>x.date===r.date);if(!e){e={date:r.date};state.entries.push(e)}Object.assign(e,r)}
@@ -1022,97 +1040,108 @@ $('wiApply').addEventListener('click',()=>{weekPlan().fill(wiRate);state.setting
 
 
 /* ---------- Einrichtung (Assistent) ---------- */
-const WIZ=['welcome','profile','activity','goal','apps','shortcut','done'];
-let wizI=0,wizGot=null;
+const WIZ=['welcome','profile','activity','goal','apps','daily','home','done'];
+let wizI=0,wizGot=null,wizHist=null;
 const ICO={
   flag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg>',
   user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
   bolt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>',
   target:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>',
   link:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
-  play:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M10 8l6 4-6 4z"/></svg>',
+  sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>'
 };
+const CHK='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>';
 function wizStepSaved(){try{return Math.max(0,Math.min(WIZ.length-1,+localStorage.getItem('kc-wiz')||0))}catch(e){return 0}}
 function openWiz(i){wizI=i||0;$('wiz').hidden=false;document.body.style.overflow='hidden';renderWiz()}
 function closeWiz(){$('wiz').hidden=true;document.body.style.overflow='';try{localStorage.removeItem('kc-wiz')}catch(e){}}
 function wizVal(id){const el=$(id);return el?parseFloat(String(el.value).replace(',','.')):NaN}
+function scBtn(url,label){return url?`<a class="bigbtn" href="${url}" target="_blank" rel="noopener">${label}</a>`:`<div class="waiting">Der Link zum Kurzbefehl folgt in Kürze.</div>`}
 function wizCalcHTML(){
   const s=state.settings,tb=typicalBurn(),def=s.dailyTarget||500,w=s.startWeight,eat=Math.round((tb-def)/10)*10;
   const kg=s.goalWeight&&w?w-s.goalWeight:null,days=kg>0?kg*s.kcalPerKg/def:null;
-  const end=days?new Date(Date.now()+Math.ceil(days)*864e5).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'–';
-  const prot=w?Math.round(w*s.protPerKg/5)*5:null,pmin=w?Math.ceil(w*PROT_MIN/5)*5:null;
-  return `<div class="calc"><div><b>${fmt(eat)}</b><span>kcal essen pro Tag</span></div><div><b>${prot?fmt(prot):'–'}</b><span>g Protein (min. ${pmin?fmt(pmin):'–'})</span></div>
-  <p>Verbrauch ca. ${fmt(tb)} kcal · ≈ −${fmt1(def*7/s.kcalPerKg)} kg pro Woche${kg>0?` · ${fmt1(kg)} kg bis zum Ziel → <b>${end}</b>`:''}</p></div>`;
+  const end=days?new Date(Date.now()+Math.ceil(days)*864e5).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'}):'–';
+  const prot=w?Math.round(w*s.protPerKg/5)*5:null;
+  return `<div class="calc4"><div><b>${fmt(eat)}</b><span>kcal essen<br>pro Tag</span></div><div><b>${prot?fmt(prot):'–'}</b><span>g Protein<br>pro Tag</span></div>
+  <div><b>−${fmt1(def*7/s.kcalPerKg)}</b><span>kg<br>pro Woche</span></div><div><b>${end}</b><span>Ziel<br>erreicht</span></div></div>
+  <p class="note">bei ca. ${fmt(tb)} kcal Verbrauch pro Tag${kg>0?` · noch ${fmt1(kg)} kg`:''}</p>`;
 }
+function histSummaryHTML(h){return `<div class="waiting ok">${CHK} ${h.days} Tage ausgewertet: Ruheenergie ≈ ${fmt(h.rest)} kcal, aktiv ≈ ${fmt(h.active)} kcal</div>`}
 function renderWiz(){
   const s=state.settings,step=WIZ[wizI];
   try{localStorage.setItem('kc-wiz',wizI)}catch(e){}
   $('wizDots').innerHTML=WIZ.map((_,i)=>`<i class="${i===wizI?'on':i<wizI?'done':''}"></i>`).join('');
-  $('wizBack').hidden=wizI===0;$('wizNext').disabled=false;
-  $('wizNext').textContent=step==='welcome'?'Los geht’s':step==='done'?'Zum Countdown':step==='shortcut'&&!wizGot?'Später testen':'Weiter';
+  $('wizBack').hidden=wizI===0;
+  $('wizNext').textContent=step==='welcome'?'Los geht’s':step==='done'?'Zum Countdown':step==='daily'&&!wizGot?'Später testen':'Weiter';
   let h='';
   if(step==='welcome')h=`<div class="ico">${ICO.flag}</div><h1 id="wizTitle">Dein Kalorien-Countdown</h1>
-    <p class="lead">Rechnet aus, wie viele Kalorien du bis zu deinem Zielgewicht noch einsparen musst, und zählt jeden Tag automatisch herunter, mit deinen echten Daten aus Apple Health.</p>
+    <p class="lead">Du siehst jeden Tag, wie viele Kalorien dir bis zu deinem Zielgewicht noch fehlen. Die Werte kommen automatisch aus Apple Health.</p>
+    <p class="label">Das brauchst du</p>
     <ul class="reqs">
-      <li><i class="tick">✓</i><div><b>iPhone mit Apple Health</b><span>Öffne diese Seite in Safari, nicht in WhatsApp oder Instagram.</span></div></li>
-      <li><i class="tick">✓</i><div><b>Apple Watch</b><span>Jedes Modell. Ohne Watch rechnet der Countdown mit Schätzwerten.</span></div></li>
-      <li><i class="tick">✓</i><div><b>Ernährungs-App mit Health-Anbindung</b><span>z. B. Yazio, MyFitnessPal, Lifesum oder FDDB.</span></div></li>
-      <li><i class="tick opt">+</i><div><b>Optional: smarte Waage</b><span>z. B. Renpho oder Withings. Sonst Gewicht in Health eintragen.</span></div></li>
+      <li><i class="tick">✓</i><div><b>iPhone</b><span>Diese Seite in Safari öffnen</span></div></li>
+      <li><i class="tick">✓</i><div><b>Apple Watch</b><span>Jedes Modell</span></div></li>
+      <li><i class="tick">✓</i><div><b>Yazio</b><span>Oder eine andere Kalorien-App</span></div></li>
+      <li><i class="tick opt">+</i><div><b>Renpho-Waage</b><span>Optional, oder eine andere smarte Waage</span></div></li>
     </ul>
-    <p class="note">Deine Daten bleiben auf deinem iPhone. Es gibt kein Konto und keinen Server. Einrichtung: ca. 5 Minuten.</p>`;
-  if(step==='profile')h=`<div class="ico">${ICO.user}</div><h1 id="wizTitle">Über dich</h1><p class="lead">Damit lässt sich dein Grundumsatz berechnen.</p>
+    <p class="note">Deine Daten bleiben auf deinem iPhone. Kein Konto, keine Kosten. Dauer: ca. 5 Minuten.</p>`;
+  if(step==='profile')h=`<div class="ico">${ICO.user}</div><h1 id="wizTitle">Über dich</h1><p class="lead">Daraus berechnen wir deinen Grundumsatz.</p>
     <div class="choice two" id="wSex"><button type="button" data-v="m" aria-pressed="${s.sex!=='f'}">Mann</button><button type="button" data-v="f" aria-pressed="${s.sex==='f'}">Frau</button></div>
     <div class="row3"><label class="f" for="wAge">Alter<input class="in" id="wAge" type="number" inputmode="numeric" min="14" max="99" value="${s.age??''}"></label>
     <label class="f" for="wH">Größe (cm)<input class="in" id="wH" type="number" inputmode="numeric" min="120" max="230" value="${s.height??''}"></label>
     <label class="f" for="wW">Gewicht (kg)<input class="in" id="wW" type="number" inputmode="decimal" step="0.1" value="${s.startWeight??''}"></label></div>
     <p class="note" id="wBmr"></p>`;
-  if(step==='activity'){const opts=[[1.4,'Wenig aktiv','Bürojob, unter 6.000 Schritte'],[1.55,'Mäßig aktiv','6.000–10.000 Schritte oder 1–2× Sport'],[1.7,'Aktiv','über 10.000 Schritte oder 3–4× Sport'],[1.85,'Sehr aktiv','körperliche Arbeit oder fast täglich Sport']];
-    h=`<div class="ico">${ICO.bolt}</div><h1 id="wizTitle">Wie aktiv bist du?</h1><p class="lead">Daraus schätzen wir deinen täglichen Verbrauch. Mit echten Daten wird es später genauer.</p>
-    <div class="choice" id="wPal">${opts.map(([v,t,d])=>`<button type="button" data-v="${v}" aria-pressed="${!s.ownValues&&Math.abs((s.pal||1.55)-v)<.01}"><b>${t}</b><span>${d}</span></button>`).join('')}
-    <button type="button" data-v="own" aria-pressed="${!!s.ownValues}"><b>Ich kenne meine Watch-Werte</b><span>Health-App → Ruheenergie bzw. Aktive Energie → „M“ → Durchschnitt</span></button></div>
-    <div class="row" id="wOwn" ${s.ownValues?'':'hidden'}><label class="f" for="wRest">Ruheenergie Ø (kcal)<input class="in" id="wRest" type="number" inputmode="numeric" value="${s.ownValues?s.baseRest:''}"></label>
-    <label class="f" for="wAct">Aktive Energie Ø (kcal)<input class="in" id="wAct" type="number" inputmode="numeric" value="${s.ownValues?s.baseActive:''}"></label></div>
+  if(step==='activity'){const opts=[[1.4,'Wenig aktiv','Bürojob, unter 6.000 Schritte'],[1.55,'Mäßig aktiv','6.000–10.000 Schritte'],[1.7,'Aktiv','über 10.000 Schritte oder 3× Sport pro Woche'],[1.85,'Sehr aktiv','körperliche Arbeit oder fast täglich Sport']];
+    const hist=wizHist||(s.ownValues&&s.histDays?{days:s.histDays,rest:s.baseRest,active:s.baseActive}:null);
+    h=`<div class="ico">${ICO.bolt}</div><h1 id="wizTitle">Dein Verbrauch</h1><p class="lead">Am genauesten wird es mit den Daten deiner Apple Watch der letzten Monate.</p>
+    <div class="box"><p class="label">Empfohlen · einmalig</p><b>Kurzbefehl 1: Verlauf übertragen</b>
+      <ol class="steps-l"><li>Kurzbefehl laden und hinzufügen. Bei der Frage nach der Quelle <b>deine Apple Watch</b> wählen.</li><li>Einmal starten und den Health-Zugriff erlauben. Danach öffnet sich diese Seite wieder.</li></ol>
+      ${scBtn(SHORTCUT_HISTORY,'Kurzbefehl 1 laden')}
+      ${hist?histSummaryHTML(hist):''}</div>
+    <p class="label">${hist?'Fertig. Oder ohne Watch-Verlauf:':'Ohne Watch-Verlauf: Wie aktiv bist du?'}</p>
+    <div class="choice" id="wPal">${opts.map(([v,t,d])=>`<button type="button" data-v="${v}" aria-pressed="${!hist&&!s.ownValues&&Math.abs((s.pal||0)-v)<.01}"><b>${t}</b><span>${d}</span></button>`).join('')}</div>
     <p class="note" id="wEst"></p>`}
-  if(step==='goal')h=`<div class="ico">${ICO.target}</div><h1 id="wizTitle">Dein Ziel</h1><p class="lead">Wie viel möchtest du wiegen, und wie schnell?</p>
-    <label class="f" for="wGoal">Zielgewicht (kg)<input class="in" id="wGoal" type="number" inputmode="decimal" step="0.1" value="${s.goalWeight??''}"></label>
-    <div><p class="label">Defizit pro Tag: <b id="wDefV">${fmt(s.dailyTarget||500)}</b> kcal</p><input type="range" id="wDef" min="250" max="1250" step="50" value="${s.dailyTarget||500}" style="width:100%;accent-color:var(--accent)" aria-label="Defizit pro Tag"><div class="wi-scale"><span>250 sanft</span><span>750</span><span>1.250 sportlich</span></div></div>
+  if(step==='goal')h=`<div class="ico">${ICO.target}</div><h1 id="wizTitle">Dein Ziel</h1>
+    <div class="goal-in"><label class="f center-f" for="wGoal">Zielgewicht in kg<input class="in big" id="wGoal" type="number" inputmode="decimal" step="0.1" value="${s.goalWeight??''}" placeholder="z. B. ${s.startWeight?Math.round(s.startWeight-5):70}"></label></div>
+    <div class="slider"><p class="label">Defizit pro Tag</p><b class="sv"><span id="wDefV">${fmt(s.dailyTarget||500)}</span> kcal</b>
+      <input type="range" id="wDef" min="250" max="1250" step="50" value="${s.dailyTarget||500}" aria-label="Defizit pro Tag"><div class="wi-scale"><span>sanft</span><span>sportlich</span></div></div>
     <div id="wCalc">${wizCalcHTML()}</div>
-    <p class="note">500 kcal pro Tag ≈ 0,5 kg pro Woche gilt als gut durchhaltbar. Einzelne Tage kannst du später im Kalender anders planen.</p>`;
-  if(step==='apps')h=`<div class="ico">${ICO.link}</div><h1 id="wizTitle">Apps mit Health verbinden</h1><p class="lead">Apple Health sammelt alles an einer Stelle. Der Countdown liest später nur dort.</p>
+    <p class="note">Tipp: 500 kcal pro Tag halten die meisten gut durch.</p>`;
+  if(step==='apps')h=`<div class="ico">${ICO.link}</div><h1 id="wizTitle">Apps verbinden</h1><p class="lead">Damit Essen und Gewicht in Apple Health landen.</p>
+    <div class="appcard"><b>Yazio</b><ol class="steps-l"><li>Yazio öffnen → <b>Profil</b> (unten rechts)</li><li>Oben rechts <b>Zahnrad</b> → <b>Apple Health</b></li><li>Alles <b>einschalten</b> und erlauben</li></ol></div>
+    <div class="appcard"><b>Renpho</b><ol class="steps-l"><li>Renpho öffnen → <b>Ich</b> (unten rechts)</li><li><b>Integrationen</b> → <b>Apple Health</b></li><li>Verbinden und <b>Gewicht</b> erlauben</li></ol></div>
+    <div class="appcard"><b>Apple Watch</b><p class="note">Nichts zu tun, die Watch schreibt automatisch in Health.</p></div>
+    <p class="note">Andere App? In deren Einstellungen „Apple Health“ suchen und einschalten.</p>`;
+  if(step==='daily')h=`<div class="ico">${ICO.sun}</div><h1 id="wizTitle">Kurzbefehl 2: Tageswerte</h1><p class="lead">Schickt jeden Morgen die Werte von gestern an den Countdown.</p>
     <ol class="steps-l">
-      <li><b>Ernährungs-App</b> → Einstellungen → Apple Health → Übertragung von <b>Kalorien und Nährwerten</b> einschalten (bei Yazio: Profil → Einstellungen → Apple Health).</li>
-      <li><b>Waage-App</b> → Integrationen → <b>Apple Health</b> verbinden, damit das Gewicht übertragen wird.</li>
-      <li><b>Apple Watch</b>: Ruheenergie, aktive Energie und Schritte landen automatisch in Health.</li>
-      <li>In der <b>Health-App</b> unter Profil → Gesundheitsdetails prüfen, ob Alter, Größe und Gewicht stimmen. Danach rechnet die Watch.</li>
-    </ol>`;
-  if(step==='shortcut')h=`<div class="ico">${ICO.play}</div><h1 id="wizTitle">Kurzbefehl einrichten</h1><p class="lead">Der Kurzbefehl holt jeden Morgen die Werte von gestern aus Health und öffnet diese Seite damit.</p>
-    <a class="bigbtn" href="${SHORTCUT_URL}" target="_blank" rel="noopener">Kurzbefehl laden</a>
-    <ol class="steps-l">
-      <li><b>„Kurzbefehl hinzufügen“</b> tippen. Wirst du nach einer Quelle gefragt, wähle <b>deine Apple Watch</b>.</li>
-      <li>In der Kurzbefehle-App den Kurzbefehl <b>lange drücken → Teilen → Zum Home-Bildschirm</b>. Das ist ab jetzt deine „App“.</li>
-      <li>Kurzbefehl <b>einmal starten</b>. Bei der Health-Abfrage <b>„Alle aktivieren“</b> → Erlauben. Die Seite öffnet sich danach in Safari.</li>
-      <li>Ab dann <b>jeden Morgen</b> nach dem Wiegen antippen und auf „Senden“ tippen.</li>
+      <li>Kurzbefehl laden und hinzufügen. Bei der Frage nach der Quelle <b>deine Apple Watch</b> wählen.</li>
+      <li>Einmal starten und den Health-Zugriff erlauben.</li>
     </ol>
-    <div class="waiting ${wizGot?'ok':''}" id="wWait">${wizGot?`${ICO.check.replace('<svg','<svg width="18" height="18"')} Daten vom ${weekday(wizGot.date)} ${ddmm(wizGot.date)} empfangen: ${wizGot.eaten?fmt(wizGot.eaten)+' kcal gegessen':'noch kein Essen erfasst'}${wizGot.weight?' · '+fmt1(wizGot.weight)+' kg':''}`:'<i class="spin"></i> Warte auf den ersten Start des Kurzbefehls …'}</div>
-    <p class="note">Öffne den Countdown am besten immer über den Kurzbefehl. Lege die Seite nicht separat auf den Home-Bildschirm, sonst speichert das iPhone die Daten getrennt.</p>`;
-  if(step==='done')h=`<div class="ico">${ICO.check}</div><h1 id="wizTitle">Alles bereit</h1><p class="lead">So sieht dein Plan aus:</p>${wizCalcHTML()}
-    <ul class="reqs"><li><i class="tick">1</i><div><b>Morgens wiegen</b><span>Die Waage schreibt das Gewicht in Health.</span></div></li>
-    <li><i class="tick">2</i><div><b>Kurzbefehl antippen, dann „Senden“</b><span>Der gestrige Tag wird abgerechnet, der Kalender färbt sich.</span></div></li>
-    <li><i class="tick">3</i><div><b>Nach 3 Wochen</b><span>Der Abgleich mit der Waage passt deine Werte an die Realität an.</span></div></li></ul>
-    ${wizGot?'<p class="note">Der empfangene Tag wird beim Start direkt übernommen.</p>':''}`;
+    ${scBtn(SHORTCUT_DAILY,'Kurzbefehl 2 laden')}
+    <div class="waiting ${wizGot?'ok':''}" id="wWait">${wizGot?`${CHK} Daten vom ${weekday(wizGot.date)} ${ddmm(wizGot.date)} empfangen`:'<i class="spin"></i> Warte auf den ersten Start …'}</div>
+    <p class="note">Täglich: morgens wiegen, Kurzbefehl antippen, „Senden“.<br>Für immer ohne Antippen: Kurzbefehle → Automation → „Uhrzeit“ → z. B. 8:00 Uhr → Kurzbefehl 2.</p>`;
+  if(step==='home')h=`<div class="ico">${ICO.home}</div><h1 id="wizTitle">Countdown aufs Home-Bildschirm</h1><p class="lead">Damit du jederzeit reinschauen kannst.</p>
+    <ol class="steps-l">
+      <li>Unten in Safari auf <b>Teilen</b> tippen</li>
+      <li><b>Zum Home-Bildschirm</b> wählen</li>
+      <li>Gibt es den Schalter <b>„Als Web-App öffnen“</b>: <b>ausschalten</b></li>
+      <li><b>Hinzufügen</b></li>
+    </ol>
+    <p class="note">Der Schalter muss aus sein, damit der Countdown dieselben Daten sieht wie der Kurzbefehl.</p>`;
+  if(step==='done')h=`<div class="ico">${ICO.check}</div><h1 id="wizTitle">Alles bereit</h1>${wizCalcHTML()}
+    <ul class="reqs"><li><i class="tick">1</i><div><b>Morgens wiegen</b><span>Die Waage schickt das Gewicht an Health</span></div></li>
+    <li><i class="tick">2</i><div><b>Kurzbefehl 2 → „Senden“</b><span>Gestern wird abgerechnet</span></div></li>
+    <li><i class="tick">3</i><div><b>Nach 3 Wochen</b><span>Der Abgleich mit der Waage verfeinert deine Werte</span></div></li></ul>`;
   $('wizBody').innerHTML=h;
-  /* Interaktionen */
   if(step==='profile'){
-    const upd=()=>{const b=bmrOf(document.querySelector('#wSex [aria-pressed="true"]').dataset.v,wizVal('wAge'),wizVal('wH'),wizVal('wW'));$('wBmr').textContent=b?`Grundumsatz ca. ${fmt(b)} kcal pro Tag (Mifflin-St Jeor)`:'Alle drei Felder ausfüllen.'};
+    const upd=()=>{const b=bmrOf(document.querySelector('#wSex [aria-pressed="true"]').dataset.v,wizVal('wAge'),wizVal('wH'),wizVal('wW'));$('wBmr').textContent=b?`Grundumsatz ca. ${fmt(b)} kcal pro Tag`:'Bitte alle drei Felder ausfüllen.'};
     $('wSex').onclick=e=>{const b=e.target.closest('button');if(!b)return;$('wSex').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));upd()};
     ['wAge','wH','wW'].forEach(id=>$(id).addEventListener('input',upd));upd();
   }
   if(step==='activity'){
-    const upd=()=>{const sel=$('wPal').querySelector('[aria-pressed="true"]');$('wOwn').hidden=!(sel&&sel.dataset.v==='own');
-      if(sel&&sel.dataset.v!=='own'){const e=estimateBase(s.sex,s.age,s.height,s.startWeight,+sel.dataset.v);$('wEst').textContent=e?`Geschätzter Verbrauch ca. ${fmt(e.total)} kcal pro Tag`:''}
-      else $('wEst').textContent='Nimm Durchschnittswerte von Tagen, an denen du die Watch den ganzen Tag getragen hast.'};
-    $('wPal').onclick=e=>{const b=e.target.closest('button');if(!b)return;$('wPal').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));upd()};upd();
+    const upd=()=>{const sel=$('wPal').querySelector('[aria-pressed="true"]');
+      if(sel){const e=estimateBase(s.sex,s.age,s.height,s.startWeight,+sel.dataset.v);$('wEst').textContent=e?`Geschätzter Verbrauch ca. ${fmt(e.total)} kcal pro Tag`:''}else $('wEst').textContent=''};
+    $('wPal').onclick=e=>{const b=e.target.closest('button');if(!b)return;const on=b.getAttribute('aria-pressed')==='true';$('wPal').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',!on&&x===b));upd()};upd();
   }
   if(step==='goal'){
     const upd=()=>{const g=wizVal('wGoal');s.goalWeight=g>0?g:null;s.dailyTarget=+$('wDef').value;$('wDefV').textContent=fmt(s.dailyTarget);$('wCalc').innerHTML=wizCalcHTML()};
@@ -1127,21 +1156,48 @@ function wizCommitStep(){
     if(!(h>=120&&h<=230))return wizErr('Bitte die Größe in cm eingeben, z. B. 178.');
     if(!(w>=30&&w<=300))return wizErr('Bitte dein aktuelles Gewicht in kg eingeben.');
     s.sex=document.querySelector('#wSex [aria-pressed="true"]').dataset.v;s.age=a;s.height=h;s.startWeight=Math.round(w*10)/10;}
-  if(step==='activity'){const sel=$('wPal').querySelector('[aria-pressed="true"]');if(!sel)return wizErr('Bitte eine Option wählen.');
-    if(sel.dataset.v==='own'){const r=wizVal('wRest'),a=wizVal('wAct');if(!(r>=900&&r<=4000))return wizErr('Bitte deine Ruheenergie in kcal eingeben, z. B. 1.900.');if(!(a>=0&&a<=3000))return wizErr('Bitte deine aktive Energie in kcal eingeben, z. B. 600.');
-      s.ownValues=true;s.baseRest=Math.round(r);s.baseActive=Math.round(a)}
-    else{const e=estimateBase(s.sex,s.age,s.height,s.startWeight,+sel.dataset.v);s.ownValues=false;s.pal=+sel.dataset.v;if(e){s.baseRest=e.rest;s.baseActive=e.active}}}
+  if(step==='activity'){const sel=$('wPal').querySelector('[aria-pressed="true"]');
+    if(sel){const e=estimateBase(s.sex,s.age,s.height,s.startWeight,+sel.dataset.v);s.ownValues=false;s.pal=+sel.dataset.v;if(e){s.baseRest=e.rest;s.baseActive=e.active}}
+    else if(!(wizHist||(s.ownValues&&s.histDays)))return wizErr('Bitte den Verlauf übertragen oder eine Aktivitätsstufe wählen.');}
   if(step==='goal'){const g=wizVal('wGoal');if(!(g>0))return wizErr('Bitte ein Zielgewicht eingeben.');if(g>=s.startWeight)return wizErr('Das Zielgewicht muss unter deinem aktuellen Gewicht liegen.');
     s.goalWeight=g;s.goalKg=Math.max(.5,Math.round((s.startWeight-g)*10)/10);s.dailyTarget=+$('wDef').value;weekPlan().fill(s.dailyTarget);s.dayPlan={}}
   lsSet();return true;
 }
 $('wizNext').addEventListener('click',()=>{
   if(WIZ[wizI]==='done'){const s=state.settings;s.onboarded=true;
-    if(wizGot){let e=state.entries.find(x=>x.date===wizGot.date);if(!e){e={date:wizGot.date};state.entries.push(e)}Object.assign(e,wizGot);pending=null;$('pending').hidden=true;$('sendBtn').disabled=true;try{history.replaceState(null,'',location.pathname)}catch(e){}}
+    if(wizGot){let e=state.entries.find(x=>x.date===wizGot.date);if(!e){e={date:wizGot.date};state.entries.push(e)}Object.assign(e,wizGot);pending=null;$('pending').hidden=true;$('sendBtn').disabled=true}
+    try{history.replaceState(null,'',location.pathname)}catch(e){}
     closeWiz();commit(wizGot?'Eingerichtet und ersten Tag übernommen':'Eingerichtet');window.scrollTo(0,0);return}
   if(wizCommitStep()!==true)return;wizI++;renderWiz();$('wiz').scrollTop=0;
 });
 $('wizBack').addEventListener('click',()=>{if(wizI>0){wizI--;renderWiz();$('wiz').scrollTop=0}});
+
+/* ---------- Verlauf aus Kurzbefehl 1 (#hx=…) ---------- */
+function parseHistory(txt){
+  const sec={a:[],r:[],s:[]};let cur=null;
+  for(const raw of String(txt).split(/[\r\n]+/)){const l=raw.trim();if(!l)continue;
+    const k=l.toUpperCase();if(/^(A|AKTIV)/.test(k)&&!/\d/.test(k)){cur='a';continue}if(/^(R|RUHE)/.test(k)&&!/\d/.test(k)){cur='r';continue}if(/^(S|SCHRITTE|STEPS)/.test(k)&&!/\d/.test(k)){cur='s';continue}
+    if(cur){const v=parseNum(l);sec[cur].push(v==null?0:v)}}
+  const n=Math.max(sec.a.length,sec.r.length);if(n<7)return null;
+  const pad=(arr)=>{const o=arr.slice(0,-1);return o};/* letzter Wert = heute, unvollständig */
+  const A=pad(sec.a),R=pad(sec.r),S=pad(sec.s);
+  const med=l=>{if(!l.length)return null;const q=[...l].sort((x,y)=>x-y);return q[Math.floor(q.length/2)]};
+  const rv=R.filter(v=>v>500);if(rv.length<5)return null;
+  const top=[...rv].sort((x,y)=>x-y)[Math.floor(rv.length*.9)];const fullRest=rv.filter(v=>v>=top*.85);
+  const rest=med(fullRest);
+  const idx=[];for(let i=0;i<A.length;i++){const r=R[i]||0,st=S[i];if(r>=rest*.85&&A[i]>=100&&(st==null||st>=1500))idx.push(i)}
+  const recent=idx.slice(-60).map(i=>A[i]);const active=med(recent.length>=7?recent:idx.map(i=>A[i]));
+  if(!rest||active==null)return null;
+  return {days:idx.length,rest:Math.round(rest/10)*10,active:Math.round(active/10)*10};
+}
+function applyHistory(h){const s=state.settings;s.baseRest=h.rest;s.baseActive=h.active;s.ownValues=true;s.histDays=h.days;lsSet()}
+function checkHistHash(){if(!/^#hx=/.test(location.hash))return false;let txt='';try{txt=decodeURIComponent(location.hash.slice(4))}catch(e){txt=location.hash.slice(4)}
+  const h=parseHistory(txt);try{history.replaceState(null,'',location.pathname)}catch(e){}
+  if(!h){status('Der Verlauf konnte nicht gelesen werden. Wurde beim Kurzbefehl deine Apple Watch gewählt?');return true}
+  applyHistory(h);wizHist=h;
+  if(!state.settings.onboarded){openWiz(WIZ.indexOf('activity'))}
+  else{render();status(`Verlauf übernommen: Ruheenergie ${fmt(h.rest)} kcal, aktiv ${fmt(h.active)} kcal`)}
+  return true}
 
 /* ---------- Dialog ---------- */
 function ask(html,yes,onYes,no='Abbrechen'){$('modalBody').innerHTML=html;$('modalYes').textContent=yes;$('modalNo').textContent=no;$('modal').hidden=false;
@@ -1172,7 +1228,8 @@ $('reEstimate').addEventListener('click',()=>{const s=state.settings,sex=$('sSex
   if(local&&local.settings&&Array.isArray(local.entries)){state={settings:{...DEFAULT.settings,...local.settings},entries:repairEntries(local.entries)}}
   render();
   if(/^#import=/.test(location.hash)){offerImport(location.hash.slice(8));return}
-  if(!state.settings.onboarded){checkHash();openWiz(wizGot?WIZ.indexOf('shortcut'):wizStepSaved());return}
+  if(checkHistHash())return;
+  if(!state.settings.onboarded){checkHash();openWiz(wizGot?WIZ.indexOf('daily'):wizStepSaved());return}
   checkHash();
   if(!storageOk)status('Hinweis: Dein Browser erlaubt kein Speichern. Öffne die Seite in Safari, nicht im privaten Modus.');
 })();
