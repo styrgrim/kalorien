@@ -1030,7 +1030,7 @@ function checkHash(){
   if(r)showPending([r]);
   else if(/^#kc-/i.test(location.hash)){$('importMsg').textContent='Der Link enthält kein gültiges Datum. Im Kurzbefehl das Datumsformat auf yyyyMMdd stellen.';$('importMsg').className='msg err'}
 }
-addEventListener('hashchange',()=>{if(/^#import=/.test(location.hash))return offerImport(location.hash.slice(8));if(/^#hx=/.test(location.hash))return checkHistHash();checkHash()});
+addEventListener('hashchange',()=>{if(/^#import=/.test(location.hash))return offerImport(location.hash.slice(8));if(/^#hx/.test(location.hash))return checkHistHash();checkHash()});
 $('sendBtn').addEventListener('click',()=>{
   if(!pending)return;
   for(const r of pending){let e=state.entries.find(x=>x.date===r.date);if(!e){e={date:r.date};state.entries.push(e)}Object.assign(e,r)}
@@ -1232,7 +1232,7 @@ function importSections(sec){
     if(base){const s=state.settings;s.baseRest=base.rest;s.baseActive=base.active;s.ownValues=true;s.histDays=base.days;s.hasWatch=true;s.useWatch=true}}
   return {days,n,base};
 }
-function checkHistHash(){if(!/^#hx=/.test(location.hash))return false;let txt='';try{txt=decodeURIComponent(location.hash.slice(4))}catch(e){txt=location.hash.slice(4)}
+function checkHistHash(){if(!/^#hx/.test(location.hash))return false;let raw=location.hash.replace(/^#hx(=|%3D)?/i,'').replace(/^(%0A|%0D|%20|\s)+/i,''),txt='';try{txt=decodeURIComponent(raw)}catch(e){txt=raw}
   try{history.replaceState(null,'',location.pathname)}catch(e){}
   const res=importSections(parseSections(txt));
   if(!res){status('Die Werte vom Kurzbefehl konnten nicht gelesen werden.');return true}
