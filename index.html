@@ -1134,7 +1134,7 @@ function renderWiz(){
     <ol class="steps-l"><li>Kurzbefehl laden und <b>hinzufügen</b>. Bei der Frage nach der Quelle <b>deine Apple Watch</b> wählen.</li><li>Einmal <b>starten</b> und den Health-Zugriff erlauben. Das dauert bis zu einer Minute. Danach öffnet sich diese Seite von selbst.</li></ol>
     <p class="note">Meldung „große Datenmengen“? Einstellungen → Apps → Kurzbefehle → Erweitert → „Teilen großer Datenmengen erlauben“.</p>
     ${scBtn(SHORTCUT_HISTORY,'Kurzbefehl 1 laden')}
-    ${hist?`<div class="waiting ok">${CHK} Verlauf da: Ruhe ≈ ${fmt(hist.rest)} kcal, aktiv ≈ ${fmt(hist.active)} kcal pro Tag</div>`:wizRecv?`<div class="waiting">Daten empfangen (${wizRecv.n} Tage), aber zu wenig Ruhe- oder Aktivenergie für eine Auswertung. Kam das von Kurzbefehl 1 mit 150 Tagen?</div>`:'<p class="note">Ohne Übertragung schätzen wir deinen Verbrauch vorerst.</p>'}`}
+    ${hist?`<div class="waiting ok">${CHK} Verlauf da: Ruhe ≈ ${fmt(hist.rest)} kcal, aktiv ≈ ${fmt(hist.active)} kcal pro Tag</div>`:wizRecv?`<div class="waiting">Daten empfangen (${wizRecv.n} Tage), aber ${wizRecv.empty&&wizRecv.empty.length?'leer: '+wizRecv.empty.join(', '):'zu wenig Ruhe- oder Aktivenergie'}. Prüfe diese Suchen im Kurzbefehl.</div>`:'<p class="note">Ohne Übertragung schätzen wir deinen Verbrauch vorerst.</p>'}`}
   if(step==='activity'){const opts=[[1.4,'Wenig aktiv','Bürojob, unter 6.000 Schritte'],[1.55,'Mäßig aktiv','6.000–10.000 Schritte'],[1.7,'Aktiv','über 10.000 Schritte oder 3× Sport pro Woche'],[1.85,'Sehr aktiv','körperliche Arbeit oder fast täglich Sport']];
     h=head('bolt','Wie aktiv bist du?','Daraus schätzen wir deinen täglichen Verbrauch.')+`
     <div class="choice" id="wPal">${opts.map(([v,t,d])=>`<button type="button" data-v="${v}" aria-pressed="${Math.abs((s.pal||0)-v)<.01}"><b>${t}</b><span>${d}</span></button>`).join('')}</div>
@@ -1241,7 +1241,9 @@ function importSections(sec){
   const t=n-1;state.today={date:dateOf(t),eaten:Math.round(at('e',t)),protein:Math.round(at('p',t)),active:Math.round(at('a',t)),rest:Math.round(at('r',t)),steps:Math.round(at('s',t)),at:Date.now()};
   let base=null;if(n>=30&&sec.a&&sec.r){base=baseFromLists((sec.a||[]).slice(1,-1),(sec.r||[]).slice(1,-1),(sec.s||[]).slice(1,-1));
     if(base){const s=state.settings;s.baseRest=base.rest;s.baseActive=base.active;s.ownValues=true;s.histDays=base.days;s.hasWatch=true;s.useWatch=true}}
-  return {days,n,base};
+  const NAMES={e:'Essen',p:'Protein',a:'Aktive Energie',r:'Ruheenergie',s:'Schritte',w:'Gewicht'};
+  const empty=Object.keys(NAMES).filter(k=>!(sec[k]||[]).some(v=>v>0)).filter(k=>state.settings.hasWatch!==false||!['a','r','s'].includes(k)).map(k=>NAMES[k]);
+  return {days,n,base,empty};
 }
 function checkHistHash(){if(!/^#hx/.test(location.hash))return false;let raw=location.hash.replace(/^#hx(=|%3D)?/i,'').replace(/^(%0A|%0D|%20|\s)+/i,''),txt='';try{txt=decodeURIComponent(raw)}catch(e){txt=raw}
   try{history.replaceState(null,'',location.pathname)}catch(e){}
@@ -1255,6 +1257,7 @@ function checkHistHash(){if(!/^#hx/.test(location.hash))return false;let raw=loc
   render();
   $('importMsg').textContent=res.base?`Verlauf übernommen: ${res.days} Tage · Ruhe ${fmt(res.base.rest)} kcal, aktiv ${fmt(res.base.active)} kcal`:`Aktualisiert: ${res.days} ${res.days===1?'Tag':'Tage'} bis gestern, heute live`;
   $('importMsg').className='msg ok';status('Aktualisiert · auf diesem Gerät gespeichert');
+  if(res.empty&&res.empty.length){$('importMsg').textContent+=` · Leer angekommen: ${res.empty.join(', ')}. Prüfe diese Suchen im Kurzbefehl.`;$('importMsg').className='msg err'}
   return true}
 
 /* ---------- Dialog ---------- */
