@@ -1131,7 +1131,7 @@ function renderWiz(){
     <p class="note" id="wWatchNote">${s.hasWatch===true?'Super. Im nächsten Schritt übertragen wir deinen Verlauf. Trag die Watch auch künftig täglich, dann rechnet der Countdown mit deinem echten Verbrauch.':s.hasWatch===false?'Kein Problem. Der Countdown rechnet dann mit einem geschätzten Verbrauch aus deinem Aktivitätslevel.':'Für einen genauen Countdown trägst du die Watch tagsüber durchgehend.'}</p>`;
   if(step==='history'){const hist=wizHist||(s.ownValues&&s.histDays?{days:s.histDays,rest:s.baseRest,active:s.baseActive}:null);
     h=head('bolt','Kurzbefehl 1: Verlauf','Einmalig: Kurzbefehl 1 holt deine Werte der letzten 60 Tage aus Health und berechnet daraus deinen Verbrauch.')+`
-    <ol class="steps-l"><li>Kurzbefehl laden und <b>hinzufügen</b>. Bei der Frage nach der Quelle <b>deine Apple Watch</b> wählen.</li><li>Einmal <b>starten</b> und den Health-Zugriff erlauben. Das dauert bis zu einer Minute. Danach öffnet sich diese Seite von selbst.</li></ol>
+    <ol class="steps-l"><li>Kurzbefehl laden und <b>hinzufügen</b>.</li><li>Einmal <b>starten</b> und den Health-Zugriff erlauben. Das dauert bis zu einer Minute. Danach öffnet sich diese Seite von selbst.</li></ol>
     <p class="note">Meldung „große Datenmengen“? Einstellungen → Apps → Kurzbefehle → Erweitert → „Teilen großer Datenmengen erlauben“.</p>
     ${scBtn(SHORTCUT_HISTORY,'Kurzbefehl 1 laden')}
     ${hist?`<div class="waiting ok">${CHK} Verlauf da: Ruhe ≈ ${fmt(hist.rest)} kcal, aktiv ≈ ${fmt(hist.active)} kcal pro Tag</div>`:wizRecv?`<div class="waiting">Daten empfangen (${wizRecv.n} Tage), aber ${wizRecv.empty&&wizRecv.empty.length?'leer: '+wizRecv.empty.join(', '):'zu wenig Ruhe- oder Aktivenergie'}. Prüfe diese Suchen im Kurzbefehl.</div>`:'<p class="note">Ohne Übertragung schätzen wir deinen Verbrauch vorerst.</p>'}`}
@@ -1153,7 +1153,7 @@ function renderWiz(){
     (s.needScale?`<div class="appcard"><b>Renpho</b><ol class="steps-l"><li>Renpho → <b>Ich</b> → <b>Integrationen</b></li><li><b>Apple Health</b> → Gewicht erlauben</li></ol></div>`:'')+
     `<p class="note">Andere App? In den Einstellungen „Apple Health“ suchen und einschalten.</p>`;
   if(step==='daily')h=head('sun','Kurzbefehl 2: Winter Arc öffnen','Dein normaler Zugang: Er holt die neuesten Werte aus Health und öffnet Winter Arc.')+`
-    <ol class="steps-l"><li>Laden und <b>hinzufügen</b>.${s.hasWatch?' Als Quelle <b>deine Apple Watch</b> wählen.':''}</li><li>Einmal <b>starten</b> und Health-Zugriff erlauben.</li></ol>
+    <ol class="steps-l"><li>Laden und <b>hinzufügen</b>.</li><li>Einmal <b>starten</b> und Health-Zugriff erlauben.</li></ol>
     ${scBtn(SHORTCUT_DAILY,'Kurzbefehl 2 laden')}
     <div class="waiting ${wizGot?'ok':''}">${wizGot?`${CHK} Verbunden, Werte bis ${weekday(wizGot.date)} ${ddmm(wizGot.date)} sind da`:'<i class="spin"></i> Warte auf den ersten Start …'}</div>
     <p class="note">Ab jetzt öffnest du den Countdown immer über Kurzbefehl 2. Die Werte aktualisieren sich dabei automatisch.</p>`;
