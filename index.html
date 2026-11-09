@@ -52,6 +52,7 @@ h2{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01
 .hero{background:var(--hero);color:var(--hero-fg);border-radius:24px;padding:22px 20px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center}
 .hero .label{color:var(--hero-muted)}
 .count{font-family:var(--display);font-weight:800;font-size:clamp(40px,12.5vw,88px);line-height:.95;letter-spacing:-.035em;margin:6px 0 0;font-variant-numeric:tabular-nums}
+.saved{margin:8px 0 0;font-size:15px;font-weight:600;color:var(--hero-muted);font-variant-numeric:tabular-nums}.saved b{color:var(--hero-fg);font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:-.01em}
 .count small{font-size:.28em;font-weight:600;letter-spacing:0;color:var(--hero-muted);margin-left:6px}
 .ring{width:108px;height:108px;position:relative}
 .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
@@ -358,6 +359,7 @@ code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;backgro
     <div>
       <p class="label" id="heroLabel">Noch einzusparen bis −10 kg</p>
       <p class="count"><span id="remaining">70.000</span><small>kcal</small></p>
+      <p class="saved" id="savedLine"></p>
     </div>
     <div class="ring" aria-hidden="true">
       <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--hero-track)" stroke-width="10"/><circle id="ringArc" cx="50" cy="50" r="42" fill="none" stroke="var(--accent)" stroke-width="10" stroke-linecap="round" stroke-dasharray="0 264"/></svg>
@@ -621,6 +623,7 @@ function render(){
   const s=state.settings,t=totals();
   $('heroLabel').textContent=t.rem===0?'Ziel erreicht':`Noch einzusparen bis ${goalWeightOf()?fmt1(goalWeightOf())+' kg':'−'+fmt1(goalKgOf())+' kg'}`;
   $('remaining').textContent=fmt(t.rem);
+  $('savedLine').innerHTML=`<b>${fmt(Math.max(0,Math.round(t.saved)))}</b> kcal bereits gespart`;
   const pct=Math.max(0,Math.min(1,t.saved/t.total));
   $('ringArc').setAttribute('stroke-dasharray',`${(pct*263.9).toFixed(1)} 264`);
   $('ringPct').textContent=Math.round(pct*100)+' %';
