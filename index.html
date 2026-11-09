@@ -242,6 +242,7 @@ select.in{appearance:none;-webkit-appearance:none}
 .goal-main{background:var(--accent-soft);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .goal-main .label{color:var(--accent)}
 .goal-main b{font-family:var(--display);font-weight:800;font-size:clamp(34px,10vw,44px);line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.goal-main .sub b{font-family:inherit;font-size:inherit;font-weight:700;letter-spacing:0;line-height:inherit;display:inline;color:var(--fg)}
 .goal-main b small{font-size:15px;font-weight:600;color:var(--muted);margin-left:4px;letter-spacing:0}
 .stepper{display:grid;grid-template-columns:48px 1fr 48px;align-items:center;gap:10px;background:var(--surface-2);border-radius:14px;padding:6px}
 .stepper button{font:inherit;font-size:22px;font-weight:600;height:44px;border-radius:10px;border:0;background:var(--surface);color:var(--fg);cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.08)}
@@ -280,6 +281,7 @@ select.in{appearance:none;-webkit-appearance:none}
 .mday.empty{visibility:hidden}
 .mday.future{opacity:.8}
 .mday.today{border-color:var(--fg)}
+.mday.fc{opacity:.8;border-style:dashed!important;border-color:currentColor!important}
 .mday[aria-pressed="true"]{box-shadow:0 0 0 2px var(--accent)}
 .mday.pend{outline:2px dashed var(--accent);outline-offset:2px}
 .mday:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
@@ -583,7 +585,12 @@ const PROT_MIN=1.2;
 function protTargets(){const w=currentWeight(),s=state.settings;return w?{goal:Math.round(w*s.protPerKg/5)*5,min:Math.ceil(w*PROT_MIN/5)*5}:null}
 const todayISO2=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 function currentWeight(){const w=sorted().filter(e=>e.weight>0);return w.length?w.at(-1).weight:startWeightOf()}
-const deficit=e=>e.eaten>0?burnOf(e)-e.eaten:null;
+const rawDeficit=e=>e.eaten>0?burnOf(e)-e.eaten:null;
+/* Heute: Prognose = Ø der letzten 7 fertigen Tage, solange das bisherige Defizit noch darüber liegt */
+function fcToday(){const l=sorted().filter(e=>!e.live&&countsDate(e.date)&&e.eaten>0).slice(-7);return l.length?Math.round(l.reduce((a,e)=>a+rawDeficit(e),0)/l.length):planFor(todayISO2())}
+const liveRaw=e=>burnOf(e)-(e.eaten||0);
+const isFc=e=>!!(e&&e.live&&liveRaw(e)>fcToday());
+const deficit=e=>e.live?Math.round(Math.min(liveRaw(e),fcToday())):rawDeficit(e);
 const sorted=()=>[...state.entries].sort((a,b)=>a.date.localeCompare(b.date));
 function firstCountDate(){const s=state.settings,inc=Object.keys(dayInc()).filter(d=>dayInc()[d]).sort();let f=s.startDate||null;if(inc[0]&&(!f||inc[0]<f))f=inc[0];return f}
 function scaleStartWeight(){const W=sorted().filter(e=>e.weight>0);if(!W.length)return null;const f=firstCountDate();if(!f)return W[0].weight;
@@ -691,7 +698,7 @@ function chartDW(){
   const slot=(c.W-c.L-c.R)/N,bw=Math.min(N<=7?28:18,slot*.6);
   c.svg._dw={L:c.L,slot,days,W:c.W};const si=days.indexOf(dwSel);if(si>=0)c.mk('rect',{x:c.L+slot*si+1,y:c.T-6,width:slot-2,height:c.H-c.T-c.B+6,rx:8,fill:'var(--accent-soft)'});
   days.forEach((d,i)=>{const cx=c.L+slot*(i+.5),v=defs[i];
-    if(v!=null){const r=rateDay(by[d]);c.mk('rect',{x:cx-bw/2,y:Math.min(y(0),y(v)),width:bw,height:Math.max(2,Math.abs(y(v)-y(0))),rx:Math.min(5,bw/3),fill:RATE_COL[r]||'var(--good)'})}
+    if(v!=null){const r=rateDay(by[d]),fc=isFc(by[d]),col=RATE_COL[r]||'var(--good)';c.mk('rect',{x:cx-bw/2,y:Math.min(y(0),y(v)),width:bw,height:Math.max(2,Math.abs(y(v)-y(0))),rx:Math.min(5,bw/3),fill:col,'fill-opacity':fc?.3:1,stroke:fc?col:'none','stroke-width':fc?1.5:0,'stroke-dasharray':fc?'4 3':''})}
     c.mk('line',{x1:cx-slot*.4,x2:cx+slot*.4,y1:y(plans[i]),y2:y(plans[i]),stroke:'var(--accent)','stroke-width':2,'stroke-linecap':'round'});
     const step=N<=7?1:N<=14?2:4;if((N-1-i)%step===0)c.mk('text',{x:cx,y:c.H-7,'text-anchor':'middle'},N<=7?weekday(d)+' '+parseISO(d).getDate():String(parseISO(d).getDate()));
   });
@@ -841,7 +848,7 @@ function renderMonth(){
     const r=view&&!pre?rateDay(view):null,df=view&&!pre?deficit(view):null;
     if(e&&inPlan(e)&&rateDay(e)){sumD+=deficit(e);nD++;if(['worse','bad','surplus'].includes(rateDay(e)))miss++}
     const planned=!r&&dt>=now;
-    const cls=['mday',r?'r-'+r:'',pre?'pre':'',planned?'plan':'',+dt===+now?'today':'',pr?'pend':'',dt>now?'future':''].join(' ');
+    const cls=['mday',view&&isFc(view)?'fc':'',r?'r-'+r:'',pre?'pre':'',planned?'plan':'',+dt===+now?'today':'',pr?'pend':'',dt>now?'future':''].join(' ');
     let small='';if(df!=null)small=(df>=0?'':'+')+fmt(Math.abs(df));else if(planned)small=fmt(planFor(iso));
     let dot='';const prr=view&&!view.live?rateProt(view.protein):null;if(prr)dot=`<i class="pdot" style="background:${RATE_COL[prr]}"></i>`;
     const rowEnd=(off+d)%7===0||d===days,selRow=mSel&&mSel.slice(0,7)===iso.slice(0,7)&&Math.floor((off+(+mSel.slice(8))-1)/7)===Math.floor((off+d-1)/7);
@@ -859,11 +866,11 @@ function renderDetail(){
   const dt=parseISO(mSel),wdLong=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][dt.getDay()];
   const preD=!countsDate(mSel);
   const r=e&&!preD?rateDay(e):null,d=e?deficit(e):null;
-  const status=preD?'<span class="hint">zählt nicht zum Countdown</span>':r?pillR(r,RATE_TXT[r]+` (${d-p>=0?'+':'−'}${fmt(Math.abs(d-p))})`):(e?'<span class="hint">kein Essen erfasst</span>':'<span class="hint">geplant</span>');const liveNote=e&&e.live?'<p class="hint">Heute live: Verbrauch = volle Ruheenergie + bisherige Aktivität. Der Wert ändert sich bis Mitternacht.</p>':'';
+  const status=preD?'<span class="hint">zählt nicht zum Countdown</span>':r?pillR(r,RATE_TXT[r]+` (${d-p>=0?'+':'−'}${fmt(Math.abs(d-p))})`):(e?'<span class="hint">kein Essen erfasst</span>':'<span class="hint">geplant</span>');const liveNote=e&&e.live&&isFc(e)?`<p class="hint">Prognose: ${fmt(fcToday())} kcal, dein Ø der letzten Tage. Bisher wären es ${fmt(liveRaw(e))}, aber du isst ja heute noch.</p>`:e&&e.live?'<p class="hint">Heute live: Verbrauch = volle Ruheenergie + bisherige Aktivität. Der Wert ändert sich bis Mitternacht.</p>':'';
   const isOverride=dayPlans()[mSel]!=null,wp=weekPlan()[wIdx(dt)];
   let html=`<div class="dhead"><b>${wdLong}, ${dt.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}</b>${status}</div>
   <div class="dmain">
-    <div class="dbox"><span class="label">${e&&d!=null?(d>=0?'Defizit':'Überschuss'):'Essen ca.'}</span><b>${e&&d!=null?fmt(Math.abs(d)):fmt(Math.round((tb-p)/10)*10)}</b><span class="hint">${e&&d!=null?'kcal':'kcal bei typischem Tag'}</span></div>
+    <div class="dbox"><span class="label">${e&&d!=null?(d>=0?(isFc(e)?'Defizit-Prognose':'Defizit'):'Überschuss'):'Essen ca.'}</span><b>${e&&d!=null?fmt(Math.abs(d)):fmt(Math.round((tb-p)/10)*10)}</b><span class="hint">${e&&d!=null?'kcal':'kcal bei typischem Tag'}</span></div>
     <div class="dbox"><span class="label">Ziel-Defizit</span><div class="dstep"><button type="button" id="dMinus" aria-label="Ziel verringern">−</button><b>${fmt(p)}</b><button type="button" id="dPlus" aria-label="Ziel erhöhen">+</button></div><span class="hint">${isOverride?'nur dieser Tag':'wie jeder '+wdLong}</span></div>
   </div>`;
   if(e){const prr=rateProt(e.protein),pc=prr?RATE_COL[prr]:'';
@@ -890,7 +897,10 @@ function renderGoal(){
   $('gTitle').textContent='Heute · '+['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][new Date().getDay()]+', '+ddmm(ti);
   $('gTempo').textContent='Plan Ø '+fmt(s.dailyTarget)+' kcal/Tag · ≈ −'+fmt1(s.dailyTarget*7/s.kcalPerKg)+' kg/Woche';
   $('gEat').textContent=fmt(eat);$('gEatSub').textContent=more?'inkl. '+fmt(td0.active)+' kcal Bewegung (+'+fmt((td0.active-s.baseActive)*f)+')':(s.useWatch?'inkl. Ø '+fmt(s.baseActive)+' kcal Bewegung':'bei '+fmt(burnT)+' kcal Verbrauch');
-  $('gProt').textContent=pt?fmt(pt.goal):'–';$('gProtSub').textContent=pt?'mindestens '+fmt(pt.min)+' g':'';
+  const tdL=td0&&td0.date===ti&&(td0.eaten>0||td0.active>0)?td0:null;
+  $('gProt').textContent=pt?fmt(pt.goal):'–';
+  $('gProtSub').innerHTML=!pt?'':tdL?((tdL.protein||0)<pt.min?`noch <b>${fmt(pt.min-(tdL.protein||0))} g</b> bis Minimum (${fmt(pt.min)})`:(tdL.protein||0)<pt.goal?`Minimum ✓ · noch <b>${fmt(pt.goal-tdL.protein)} g</b> bis Ziel`:'Ziel erreicht ✓'):'mindestens '+fmt(pt.min)+' g';
+  if(tdL){const fr=eat-(tdL.eaten||0);$('gEatSub').innerHTML+=`<br>${fr>=0?`noch <b>${fmt(fr)}</b> frei`:`<b>${fmt(-fr)}</b> drüber`}`}
   $('gDef').textContent=fmt(def)+' kcal Defizit heute';
   const td=state.today;
   if(td&&td.date===ti&&(td.eaten>0||td.active>0)){const left=eat-td.eaten,pct=Math.min(100,td.eaten/eat*100);const pp=pt&&td.protein?Math.min(100,td.protein/pt.goal*100):0;
@@ -898,17 +908,17 @@ function renderGoal(){
     const actNote=openA>=30?`<p class="tnote">Eingeplant sind ${fmt(s.baseActive)} kcal Bewegung, bisher ${fmt(td.active||0)}. Noch <b>${fmt(openA)} kcal aktiv</b> offen. Schaffst du die nicht, darfst du heute rund ${fmt(Math.round(openA*f/10)*10)} kcal weniger essen.</p>`:'';
     const tm=new Date(td.at).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
     $('gToday').innerHTML=`<p class="label">Heute bisher · Stand ${tm}</p>
-    <div class="tl"><b>${fmt(Math.abs(left))}</b><span>kcal ${left>=0?'übrig':'drüber'}</span></div>
+    <div class="tl">${left>=0?`<b>${fmt(left)}</b><span>von ${fmt(eat)} kcal noch frei</span>`:`<b>${fmt(-left)}</b><span>kcal drüber</span>`}</div>
     <div class="bar"><i style="width:${pct}%;background:${left>=0?'var(--good)':'var(--bad)'}"></i></div>
-    <span class="tsub">${fmt(td.eaten)} von ${fmt(eat)} kcal gegessen${td.active?` · ${fmt(td.active)} kcal aktiv`:''}</span>
-    ${pt?`<div class="bar"><i style="width:${pp}%;background:var(--accent)"></i></div><span class="tsub">${fmt(td.protein||0)} von ${fmt(pt.goal)} g Protein</span>`:''}${actNote}`;$('gToday').hidden=false}
+    <span class="tsub">${fmt(td.eaten)} ${left>=0?'kcal gegessen':`von ${fmt(eat)} kcal gegessen`}${td.active?` · ${fmt(td.active)} kcal aktiv`:''}</span>
+    ${pt?`<div class="bar"><i style="width:${pp}%;background:var(--accent)"></i></div><span class="tsub">${fmt(td.protein||0)} von ${fmt(pt.goal)} g Protein${(td.protein||0)<pt.min?` · noch ${fmt(pt.min-(td.protein||0))} g bis Minimum`:''}</span>`:''}${actNote}`;$('gToday').hidden=false}
   else $('gToday').hidden=true;
   if(t.rem>0&&s.dailyTarget>0){const d=new Date(Date.now()+Math.ceil(t.rem/s.dailyTarget)*864e5);$('gEnd').textContent='Ziel erreicht am '+d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'})}else $('gEnd').textContent=t.rem===0?'Ziel erreicht':'';
   const last=dwSel?(state.entries.find(e=>e.date===dwSel)||{date:dwSel}):sorted().filter(e=>e.eaten>0).at(-1);
   if(last){const pl=planFor(last.date),ad=deficit(last),off=!countsDate(last.date),r=off?null:rateDay(last);
     const pr=off||last.live?null:rateProt(last.protein),pg=last.protein>0?`${fmt(last.protein)} g Protein · ${fmt1(last.protein/(last.weight||currentWeight()))} g/kg`:'';
     $('gLast').innerHTML=`<span>${dwSel?'<b>':''}${weekday(last.date)} ${ddmm(last.date)}${dwSel?'</b>':''}:</span>`
-      +(ad!=null?(r?pillR(r,`Defizit ${fmt(ad)} (Ziel ${fmt(pl)})`):`<span class="pill none">Defizit ${fmt(ad)}${off?' · zählt nicht':''}</span>`):'<span class="pill none">kein Essen erfasst</span>')
+      +(ad!=null?(r?pillR(r,`Defizit ${isFc(last)?'≈ ':''}${fmt(ad)}${isFc(last)?' Prognose':''} (Ziel ${fmt(pl)})`):`<span class="pill none">Defizit ${fmt(ad)}${off?' · zählt nicht':''}</span>`):'<span class="pill none">kein Essen erfasst</span>')
       +(pg?(pr?pillR(pr,pg):`<span class="pill none">${pg}</span>`):'')
       +(dwSel&&last.weight>0?`<span class="pill none">${fmt1(last.weight)} kg</span>`:'');
   }else $('gLast').innerHTML='';
