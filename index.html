@@ -690,7 +690,9 @@ function chartDW(){
   const N=dwN,days=[];document.querySelectorAll('.dw-seg button').forEach(b=>b.setAttribute('aria-selected',+b.dataset.n===N));for(let i=N-1;i>=0;i--){const d=new Date(lastD.getTime()-i*864e5);days.push(isoOf(d))}
   const by=Object.fromEntries(all.map(e=>[e.date,e]));
   const defs=days.map(d=>by[d]&&countsDate(d)?deficit(by[d]):null),plans=days.map(planFor),ws=days.map(d=>by[d]&&by[d].weight>0?by[d].weight:null);
-  $('legendDW').innerHTML='<span><i style="background:var(--good)"></i>Defizit</span><span><i style="background:var(--accent)"></i>Ziel</span><span><i style="background:none;border-top:2px solid var(--fg);height:0"></i>Gewicht</span>';
+  /* Trend: Ø aller Messungen der letzten 7 Tage (mind. 2) */
+  const allW=all.filter(e=>e.weight>0),tr=days.map(d=>{const t=parseISO(d).getTime(),l=allW.filter(e=>{const dd=(t-parseISO(e.date).getTime())/864e5;return dd>=0&&dd<7});return l.length>=2?l.reduce((a,e)=>a+e.weight,0)/l.length:null});
+  $('legendDW').innerHTML='<span><i style="background:var(--good)"></i>Defizit</span><span><i style="background:var(--accent)"></i>Ziel</span><span><i style="background:none;border-top:2px solid var(--fg);height:0;opacity:.35"></i>Gewicht</span><span><i style="background:none;border-top:3px solid var(--fg);height:0"></i>Trend (Ø 7 Tage)</span>';
   if(!defs.some(v=>v!=null))return emptyChart(c,'Noch keine Tage mit Essensdaten');
   const dv=defs.filter(v=>v!=null);let lo=Math.min(0,...dv),hi=Math.max(...plans,...dv);hi+=(hi-lo)*.12;if(lo<0)lo-=(hi-lo)*.08;
   const y=v=>c.T+(hi-v)/(hi-lo)*(c.H-c.T-c.B);
@@ -703,13 +705,15 @@ function chartDW(){
     const step=N<=7?1:N<=14?2:4;if((N-1-i)%step===0)c.mk('text',{x:cx,y:c.H-7,'text-anchor':'middle'},N<=7?weekday(d)+' '+parseISO(d).getDate():String(parseISO(d).getDate()));
   });
   if(lo<0)c.mk('line',{x1:c.L,x2:c.W-c.R,y1:y(0),y2:y(0),stroke:'var(--muted)','stroke-width':1});
-  const wv=ws.filter(v=>v!=null);
+  const wv=[...ws,...tr].filter(v=>v!=null);
   if(wv.length){let wl=Math.min(...wv),wh=Math.max(...wv);const pad=Math.max(.4,(wh-wl)*.25);wl-=pad;wh+=pad;
     const yw=v=>c.T+(wh-v)/(wh-wl)*(c.H-c.T-c.B);
     [wh-pad*.5,wl+pad*.5].forEach(v=>c.mk('text',{x:c.W-c.R+6,y:yw(v)+4,'text-anchor':'start'},fmt1(v)));
     const pts=ws.map((v,i)=>v==null?null:[c.L+slot*(i+.5),yw(v)]).filter(Boolean);
-    if(pts.length>1)c.mk('path',{d:pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' '),fill:'none',stroke:'var(--fg)','stroke-width':2,'stroke-linejoin':'round'});
-    pts.forEach(p=>c.mk('circle',{cx:p[0],cy:p[1],r:3.5,fill:'var(--surface)',stroke:'var(--fg)','stroke-width':2}));
+    if(pts.length>1)c.mk('path',{d:pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' '),fill:'none',stroke:'var(--fg)','stroke-width':1.25,'stroke-opacity':.35,'stroke-linejoin':'round'});
+    pts.forEach(p=>c.mk('circle',{cx:p[0],cy:p[1],r:2.8,fill:'var(--surface)',stroke:'var(--fg)','stroke-width':1.5,'stroke-opacity':.45}));
+    const tp=tr.map((v,i)=>v==null?null:[c.L+slot*(i+.5),yw(v)]).filter(Boolean);
+    if(tp.length>1)c.mk('path',{d:tp.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' '),fill:'none',stroke:'var(--fg)','stroke-width':3,'stroke-linejoin':'round','stroke-linecap':'round'});
     c.mk('text',{x:c.W-c.R+6,y:c.T-2,'text-anchor':'start'},'kg');
   }
   c.mk('text',{x:c.L-6,y:c.T-2,'text-anchor':'end'},'kcal');
